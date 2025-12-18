@@ -1,4 +1,3 @@
-
 'use client'
 
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,25 +33,21 @@ import { format } from 'date-fns'
 const formSchema = z.object({
     category: z.string().min(1, 'Required'),
     description: z.string().optional(),
-    amount: z.coerce.number().min(1),
+    amount: z.number().min(1, 'Amount must be positive'),
     date: z.date(),
     paymentMode: z.string().min(1)
 })
 
 export function ExpenseForm() {
     const [loading, setLoading] = useState(false)
-
-    // Fix for Hydration Error: Initialize date with undefined or handle on mount
-    // However, useForm needs a default.
-    // We'll use a mounted check to display the date.
-
     const [isMounted, setIsMounted] = useState(false)
+
     useEffect(() => {
         setIsMounted(true)
     }, [])
 
     const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             category: '',
             description: '',
@@ -78,8 +73,9 @@ export function ExpenseForm() {
         }
     }
 
-    // If not mounted, render simpler state or empty to avoid mismatch if Date differs
-    // Or force suppress hydration warning on specific span
+    if (!isMounted) {
+        return null; // Or a loading skeleton
+    }
 
     return (
         <Card>
@@ -122,7 +118,12 @@ export function ExpenseForm() {
                                     <FormItem className="flex-1">
                                         <FormLabel>Amount</FormLabel>
                                         <FormControl>
-                                            <Input type="number" {...field} />
+                                            <Input
+                                                type="number"
+                                                placeholder="0.00"
+                                                {...field}
+                                                onChange={e => field.onChange(e.target.valueAsNumber)}
+                                            />
                                         </FormControl>
                                         <FormMessage />
                                     </FormItem>
@@ -168,7 +169,7 @@ export function ExpenseForm() {
                                                         !field.value && "text-muted-foreground"
                                                     )}
                                                 >
-                                                    {isMounted && field.value ? (
+                                                    {field.value ? (
                                                         format(field.value, "PPP")
                                                     ) : (
                                                         <span>Pick a date</span>

@@ -29,12 +29,12 @@ export function DownloadButton({ invoice, items, tenant }: DownloadButtonProps) 
             setIsPrinting(false)
             toast.success('Print dialog opened')
         },
-        onPrintError: (error) => {
+        onPrintError: (error: any) => {
             setIsPrinting(false)
             console.error('Print Error:', error)
             toast.error('Failed to print')
         }
-    })
+    } as any)
 
     return (
         <>
