@@ -28,11 +28,38 @@ export async function getDashboardStats() {
         .from('products')
         .select('*', { count: 'exact', head: true })
 
+    // 5. Receivable & Payable (from Parties current_balance)
+    const { data: partiesData } = await supabase
+        .from('parties')
+        .select('current_balance')
+
+    let totalReceivable = 0
+    let totalPayable = 0
+    let receivablePartiesCount = 0
+    let payablePartiesCount = 0
+
+    if (partiesData) {
+        partiesData.forEach(p => {
+            const balance = p.current_balance || 0
+            if (balance > 0) {
+                totalReceivable += balance
+                receivablePartiesCount++
+            } else if (balance < 0) {
+                totalPayable += Math.abs(balance)
+                payablePartiesCount++
+            }
+        })
+    }
+
     return {
         totalRevenue,
         salesCount: salesCount || 0,
         partiesCount: partiesCount || 0,
-        productsCount: productsCount || 0
+        productsCount: productsCount || 0,
+        totalReceivable,
+        totalPayable,
+        receivablePartiesCount,
+        payablePartiesCount
     }
 }
 

@@ -65,8 +65,8 @@ export function MainNav({
                             isActive
                                 ? 'text-[#1677FF] bg-[#1E293B]'
                                 : 'text-[#E5E7EB] hover:bg-[#1E293B]',
-                            // Red Indicator for active state
-                            isActive && "border-l-4 border-[#EF4444] pl-3"
+                            // Blue Indicator for active state
+                            isActive && "border-l-4 border-blue-600 pl-3 bg-blue-900/20 text-blue-400"
                         )}
                         onClick={(e) => {
                             if (hasChildren) {
@@ -79,12 +79,12 @@ export function MainNav({
                             {item.icon && (
                                 <item.icon className={cn(
                                     "h-5 w-5 transition-transform",
-                                    isActive ? "text-[#1677FF]" : "text-slate-400 group-hover:text-white",
+                                    isActive ? "text-blue-500" : "text-slate-400 group-hover:text-white",
                                     collapsed ? "mr-0" : "mr-3"
                                 )} />
                             )}
                             {!collapsed && (
-                                <span className="truncate">{item.title}</span>
+                                <span className={cn("truncate", isActive && "font-semibold")}>{item.title}</span>
                             )}
                         </div>
 
@@ -109,17 +109,17 @@ export function MainNav({
 
                         {/* Submenus */}
                         {!collapsed && isExpanded && hasChildren && (
-                            <div className="bg-[#0b1120] animate-in slide-in-from-top-2 duration-200">
+                            <div className="bg-[#0f172a] animate-in slide-in-from-top-2 duration-200 border-l border-slate-800 ml-4 my-1 rounded-l-md">
                                 {item.items!.map((sub) => (
                                     <Link
                                         key={sub.title}
                                         href={sub.href}
                                         className={cn(
-                                            "flex items-center py-2 pl-12 pr-4 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors border-l-2 border-transparent hover:border-slate-600",
-                                            pathname === sub.href && "text-blue-400 font-medium"
+                                            "flex items-center py-2 pl-4 pr-4 text-sm text-slate-400 hover:text-white hover:bg-white/5 transition-colors rounded-r-md",
+                                            pathname === sub.href && "text-blue-400 font-medium bg-blue-900/10 border-l-2 border-blue-500"
                                         )}
                                     >
-                                        <div className="w-1 h-1 rounded-full bg-current mr-2 opacity-50" />
+                                        {pathname !== sub.href && <div className="w-1 h-1 rounded-full bg-slate-600 mr-3 opacity-50" />}
                                         {sub.title}
                                     </Link>
                                 ))}

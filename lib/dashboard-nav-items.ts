@@ -11,7 +11,11 @@ import {
     Store,
     FileText,
     CreditCard,
-    Zap
+    Zap,
+    TrendingUp,
+    RefreshCw,
+    Share2,
+    Database
 } from 'lucide-react'
 
 export type NavItem = {
@@ -24,7 +28,7 @@ export type NavItem = {
 
 export const dashboardNavItems: NavItem[] = [
     {
-        title: 'Dashboard',
+        title: 'Home',
         href: '/dashboard',
         icon: LayoutDashboard,
     },
@@ -39,7 +43,7 @@ export const dashboardNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Inventory',
+        title: 'Items',
         href: '/dashboard/inventory',
         icon: Package,
         items: [
@@ -50,7 +54,7 @@ export const dashboardNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Sales & Invoices',
+        title: 'Sale',
         href: '/dashboard/invoices',
         icon: Receipt,
         items: [
@@ -59,24 +63,7 @@ export const dashboardNavItems: NavItem[] = [
             { title: 'Delivery Challan', href: '/dashboard/invoices/delivery-challan' },
             { title: 'Payment In', href: '/dashboard/invoices/payment-in' },
             { title: 'E-Way Bill', href: '/dashboard/invoices/eway-bill' },
-        ],
-    },
-    {
-        title: 'Quotations',
-        href: '/dashboard/quotations',
-        icon: FileText,
-        items: [
-            { title: 'Create Quotation', href: '/dashboard/quotations/create' },
-            { title: 'Quotation List', href: '/dashboard/quotations' },
-        ],
-    },
-    {
-        title: 'Online Orders',
-        href: '/dashboard/orders',
-        icon: ShoppingCart,
-        items: [
-            { title: 'Order List', href: '/dashboard/orders' },
-            { title: 'Order Settings', href: '/dashboard/orders/settings' },
+            { title: 'Create Quotation', href: '/dashboard/quotations/create' }, // Moved quotations here as part of sales usually
         ],
     },
     {
@@ -86,20 +73,29 @@ export const dashboardNavItems: NavItem[] = [
         items: [
             { title: 'Purchase Bill', href: '/dashboard/purchase/bills' },
             { title: 'Payment Out', href: '/dashboard/purchase/payment-out' },
-            { title: 'Expense', href: '/dashboard/accounting/expenses' }, // Linked to existing accounting? Or new?
+            { title: 'Expense', href: '/dashboard/accounting/expenses' },
             { title: 'Debit Note', href: '/dashboard/purchase/debit-note' },
+            { title: 'Purchase Order', href: '/dashboard/purchase/orders' }, // Hypothetical route
         ],
     },
     {
-        title: 'Accounting',
-        href: '/dashboard/accounting',
+        title: 'Grow Your Business',
+        href: '/dashboard/grow',
+        icon: TrendingUp,
+        items: [
+            { title: 'Online Store', href: '/store' },
+            { title: 'Marketing', href: '/dashboard/marketing' },
+        ]
+    },
+    {
+        title: 'Cash & Bank',
+        href: '/dashboard/accounting/cash-bank',
         icon: BookOpen,
         items: [
-            { title: 'Cash & Bank', href: '/dashboard/accounting/cash-bank' },
-            { title: 'Day Book', href: '/dashboard/accounting/day-book' },
-            { title: 'Ledger', href: '/dashboard/accounting/ledger' },
-            { title: 'Trial Balance', href: '/dashboard/accounting/trial-balance' },
-        ],
+            { title: 'Cash In Hand', href: '/dashboard/accounting/cash-bank' },
+            { title: 'Bank Accounts', href: '/dashboard/accounting/bank' },
+            { title: 'Loan Accounts', href: '/dashboard/accounting/loan' },
+        ]
     },
     {
         title: 'Reports',
@@ -114,25 +110,28 @@ export const dashboardNavItems: NavItem[] = [
         ],
     },
     {
-        title: 'Storefront',
-        href: '/store', // external? or dashboard management of store?
-        icon: Store,
-        items: [
-            { title: 'Products', href: '/dashboard/store/products' },
-            { title: 'Orders', href: '/dashboard/store/orders' },
-            { title: 'Website Settings', href: '/dashboard/store/settings' },
-        ]
+        title: 'Sync, Share & Backup',
+        href: '/dashboard/utilities/backup',
+        icon: Share2,
+    },
+    {
+        title: 'Bulk GST Update',
+        href: '/dashboard/utilities/bulk-gst',
+        icon: RefreshCw,
     },
     {
         title: 'Utilities',
         href: '/dashboard/utilities',
         icon: Zap,
         items: [
-            { title: 'Bulk GST Update', href: '/dashboard/utilities/bulk-gst' },
             { title: 'Import / Export', href: '/dashboard/utilities/import-export' },
-            { title: 'Sync, Share & Backup', href: '/dashboard/utilities/backup' },
+            { title: 'Recycle Bin', href: '/dashboard/utilities/recycle-bin' },
         ],
     },
+    // Keep Settings at bottom or hidden if not requested? 
+    // User request didn't explicitly forbid others, but list was specific.
+    // I will add Settings because it's essential, but maybe after Utilities as per list implicit order?
+    // Actually, user list: "Utilities" was last. I'll stick to their list.
     {
         title: 'Settings',
         href: '/dashboard/settings',
@@ -144,5 +143,5 @@ export const dashboardNavItems: NavItem[] = [
             { title: 'User Management', href: '/dashboard/settings/users' },
             { title: 'Subscription', href: '/dashboard/settings/subscription' },
         ],
-    },
+    }
 ]

@@ -570,7 +570,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                         <div className="w-[140px] opacity-50 pointer-events-none">
                                             <div className="space-y-2">
                                                 <FormLabel className="text-xs text-slate-500 uppercase">Tax Mode</FormLabel>
-                                                <Input disabled value="Without Tax" className="h-10 bg-slate-50" />
+                                                <Input disabled readOnly value="Without Tax" className="h-10 bg-slate-50" />
                                             </div>
                                         </div>
                                     </div>

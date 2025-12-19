@@ -77,3 +77,122 @@ export async function deleteProduct(id: string) {
 
     revalidatePath('/dashboard/inventory')
 }
+
+export async function getInventoryStats() {
+    const supabase = await createClient()
+    const { data: products } = await supabase.from('products').select('stock_quantity, price, cost_price, type')
+
+    if (!products) return { totalStockValue: 0, totalStockQty: 0, lowStockCount: 0 }
+
+    const totalStockValue = products.reduce((acc, p) => {
+        if (p.type === 'service') return acc
+        return acc + (p.stock_quantity * (p.cost_price || 0))
+    }, 0)
+
+    const totalStockQty = products.reduce((acc, p) => {
+        if (p.type === 'service') return acc
+        return acc + (p.stock_quantity || 0)
+    }, 0)
+
+    return { totalStockValue, totalStockQty }
+}
+
+export async function getCategories() {
+    const supabase = await createClient()
+    const { data } = await supabase.from('products').select('category, id')
+
+    const categoryMap = new Map<string, number>()
+    const uncategorizedCount = 0
+
+    data?.forEach(p => {
+        const cat = p.category || 'Uncategorized'
+        categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
+    })
+
+    return Array.from(categoryMap.entries()).map(([name, count]) => ({ name, count }))
+}
+
+export async function getUnits() {
+    const supabase = await createClient()
+    const { data } = await supabase.from('products').select('unit').not('unit', 'is', null)
+
+    // Get unique units
+    const units = Array.from(new Set(data?.map(p => p.unit) || []))
+    return units.map(u => ({ name: u, symbol: u, decimal: true })) // detailed mock
+}
+
+export async function getProductTransactions(productId: string) {
+    const supabase = await createClient()
+
+    // We fetch checks from stock_movements for products
+    // For services, we might need to check invoice_items mainly (since no stock movement)
+
+    // 1. Stock Movements (Purchase, Sales, Adjustments)
+    const { data: movements } = await supabase
+        .from('stock_movements')
+        .select('*')
+        .eq('product_id', productId)
+        .order('created_at', { ascending: false })
+
+    // 2. We can also fetch Invoice Items and PO Items to get "Party Name" if reference_id links to them
+    // This is a bit complex without joins, but we'll try to do a basic enrichment if possible.
+    // For now, let's return movements as the primary source.
+
+    return movements
+}
+
+export async function bulkUpdateCategory(productIds: string[], newCategory: string) {
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('products')
+        .update({ category: newCategory })
+        .in('id', productIds)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/dashboard/inventory')
+}
+
+export async function adjustStock(productId: string, quantity: number, type: 'ADD' | 'REDUCE', reason: string, remarks?: string, date?: Date) {
+    const supabase = await createClient()
+
+    // 1. Get current stock
+    const { data: product } = await supabase.from('products').select('stock_quantity').eq('id', productId).single()
+    if (!product) throw new Error('Product not found')
+
+    const newStock = type === 'ADD'
+        ? product.stock_quantity + quantity
+        : product.stock_quantity - quantity
+
+    // 2. Update Product Stock
+    const { error: updateError } = await supabase
+        .from('products')
+        .update({ stock_quantity: newStock })
+        .eq('id', productId)
+
+    if (updateError) throw new Error(updateError.message)
+
+    // 3. Record Movement
+    const { error: moveError } = await supabase.from('stock_movements').insert({
+        product_id: productId,
+        type: type === 'ADD' ? 'ADJUSTMENT_ADD' : 'ADJUSTMENT_REDUCE',
+        quantity: quantity,
+        description: `Stock Adjustment: ${reason} - ${remarks || ''}`,
+        created_at: date ? date.toISOString() : new Date().toISOString()
+    })
+
+    if (moveError) console.error("Failed to record movement", moveError)
+
+    revalidatePath('/dashboard/inventory')
+}
+
+export async function getAdjustmentHistory() {
+    const supabase = await createClient()
+    const { data } = await supabase
+        .from('stock_movements')
+        .select('*, products(name)')
+        .in('type', ['ADJUSTMENT_ADD', 'ADJUSTMENT_REDUCE'])
+        .order('created_at', { ascending: false })
+        .limit(50)
+
+    return data
+}
