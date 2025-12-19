@@ -25,12 +25,26 @@ export async function createParty(data: any) {
 
     if (!profile) throw new Error('Profile not found')
 
+    // Clean up UI-specific fields not in DB
+    const { is_shipping_same, is_custom_credit_limit, ...dbData } = data
+
+    // Ensure numeric fields are proper numbers or 0
+    if (dbData.credit_limit === undefined || dbData.credit_limit === null || isNaN(dbData.credit_limit)) {
+        dbData.credit_limit = 0
+    }
+    if (dbData.opening_balance === undefined || dbData.opening_balance === null || isNaN(dbData.opening_balance)) {
+        dbData.opening_balance = 0
+    }
+
     const { error } = await supabase.from('parties').insert({
-        ...data,
+        ...dbData,
         tenant_id: profile.tenant_id
     })
 
-    if (error) throw new Error(error.message)
+    if (error) {
+        console.error('Party Create Error:', error)
+        throw new Error(error.message)
+    }
     revalidatePath('/dashboard/parties')
 }
 
