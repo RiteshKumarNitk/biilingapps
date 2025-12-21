@@ -10,21 +10,21 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table'
-import { Card, CardContent, CardHeader } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { format } from 'date-fns'
 import {
     ChevronDown,
     Settings,
     Plus,
     Calendar,
-    Search,
-    Printer,
-    Share2,
     MoreVertical,
     Eye,
     Edit,
     Trash2,
-    FileText
+    FileText,
+    Printer,
+    Share2,
+    Search
 } from 'lucide-react'
 import {
     DropdownMenu,
@@ -35,21 +35,22 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export default async function QuotationsPage() {
-    const { data: quotations, summary } = await getQuotations()
+export default async function ProformaInvoicePage() {
+    // Explicitly fetch 'proforma' type
+    const { data: quotations, summary } = await getQuotations('proforma')
 
     return (
         <div className="min-h-screen bg-[#F5F7FA] p-4 md:p-6 font-sans text-slate-800 space-y-5">
             {/* Top Bar */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-2 group cursor-pointer">
-                    <h1 className="text-xl font-semibold text-slate-700">Estimate / Quotation</h1>
+                    <h1 className="text-xl font-normal text-slate-800">Proforma Invoice</h1>
                     <ChevronDown className="h-5 w-5 text-slate-400 group-hover:text-slate-600 transition-colors" />
                 </div>
                 <div className="flex items-center gap-3">
-                    <Link href="/dashboard/quotations/create">
+                    <Link href="/dashboard/invoices/proforma/new">
                         <Button className="bg-[#EF4444] hover:bg-red-600 text-white rounded-full px-6 h-9 text-sm font-medium shadow-sm transition-all hover:shadow-md">
-                            <Plus className="h-4 w-4 mr-1.5" /> Add Estimate
+                            <Plus className="h-4 w-4 mr-1.5" /> Add Proforma
                         </Button>
                     </Link>
                     <Button variant="ghost" size="icon" className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full">
@@ -93,7 +94,7 @@ export default async function QuotationsPage() {
                             </h2>
                             {summary.total > 0 && (
                                 <span className="text-emerald-600 text-[10px] font-bold bg-emerald-50 border border-emerald-100 px-2 py-0.5 rounded-full tracking-wide">
-                                    100% ↑
+                                    % ↑ vs last month
                                 </span>
                             )}
                         </div>
@@ -120,19 +121,25 @@ export default async function QuotationsPage() {
 
             {/* Transactions Section */}
             <div>
-                <h3 className="font-semibold text-slate-700 text-base mb-3 ml-1">Transactions</h3>
+                <div className="flex items-center justify-between mb-3 pl-1 pr-1">
+                    <h3 className="font-semibold text-slate-700 text-base">Transactions</h3>
+                    <div className="p-2 hover:bg-slate-100 rounded-full cursor-pointer text-slate-400">
+                        <Search className="h-4 w-4" />
+                    </div>
+                </div>
+
                 <Card className="rounded-xl border-none shadow-sm bg-white min-h-[500px] flex flex-col">
                     <div className="flex-1 overflow-auto">
                         <Table>
                             <TableHeader>
                                 <TableRow className="border-b border-slate-100 hover:bg-transparent">
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 pl-6 w-[120px]">DATE</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11">REFERENCE NO</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11">PARTY NAME</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right">AMOUNT</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right">BALANCE</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 w-[120px]">STATUS</TableHead>
-                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right pr-6 w-[140px]">ACTIONS</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11 pl-6 w-[120px]">DATE</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11">REFERENCE NO</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11">PARTY NAME</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11 text-right">AMOUNT</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11 text-right">BALANCE</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11 w-[120px]">STATUS</TableHead>
+                                    <TableHead className="bg-white text-xs font-semibold text-slate-500 h-11 text-right pr-6 w-[140px]">ACTIONS</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -143,7 +150,7 @@ export default async function QuotationsPage() {
                                                 <div className="p-4 rounded-full bg-slate-50">
                                                     <FileText className="h-8 w-8 opacity-20" />
                                                 </div>
-                                                <p className="text-sm font-medium text-slate-500">No estimates found</p>
+                                                <p className="text-sm font-medium text-slate-500">No proforma invoices found</p>
                                             </div>
                                         </TableCell>
                                     </TableRow>
@@ -156,28 +163,28 @@ export default async function QuotationsPage() {
                                         const balance = isConverted ? 0 : q.grand_total
 
                                         return (
-                                            <TableRow key={q.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors group">
-                                                <TableCell className="py-4 pl-6 text-sm text-slate-600">
+                                            <TableRow key={q.id} className="border-b border-slate-50/60 hover:bg-slate-50 transition-colors group">
+                                                <TableCell className="py-3 pl-6 text-sm text-slate-600">
                                                     {format(new Date(q.date), 'dd/MM/yyyy')}
                                                 </TableCell>
-                                                <TableCell className="py-4 text-sm text-blue-600 font-medium cursor-pointer hover:underline">
-                                                    <Link href={`/dashboard/quotations/${q.id}`}>
+                                                <TableCell className="py-3 text-sm text-blue-600 font-medium cursor-pointer hover:underline">
+                                                    <Link href={`/dashboard/invoices/proforma/${q.id}`}>
                                                         {q.quotation_number}
                                                     </Link>
                                                 </TableCell>
-                                                <TableCell className="py-4 text-sm font-medium text-slate-700">
+                                                <TableCell className="py-3 text-sm font-medium text-slate-700">
                                                     {q.party_name}
                                                 </TableCell>
-                                                <TableCell className="py-4 text-sm font-semibold text-slate-700 text-right">
+                                                <TableCell className="py-3 text-sm font-semibold text-slate-700 text-right">
                                                     ₹ {q.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                 </TableCell>
-                                                <TableCell className="py-4 text-sm text-slate-500 text-right">
+                                                <TableCell className="py-3 text-sm text-slate-500 text-right">
                                                     ₹ {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                 </TableCell>
-                                                <TableCell className="py-4 text-sm font-medium">
+                                                <TableCell className="py-3 text-sm font-medium">
                                                     <span className={statusColor}>{statusText}</span>
                                                 </TableCell>
-                                                <TableCell className="py-4 pr-6 text-right">
+                                                <TableCell className="py-3 pr-6 text-right">
                                                     <div className="flex justify-end items-center gap-3">
                                                         {/* Primary Convert Action */}
                                                         {isOpen && (
@@ -188,13 +195,12 @@ export default async function QuotationsPage() {
                                                                     </Button>
                                                                 </DropdownMenuTrigger>
                                                                 <DropdownMenuContent align="end">
+                                                                    <DropdownMenuLabel>Convert to</DropdownMenuLabel>
+                                                                    <DropdownMenuSeparator />
                                                                     <DropdownMenuItem asChild>
-                                                                        <Link href={`/dashboard/invoices/new?from_estimate=${q.id}`} className="cursor-pointer">
-                                                                            To Sale Invoice
+                                                                        <Link href={`/dashboard/invoices/new?from_proforma=${q.id}`} className="cursor-pointer">
+                                                                            Sale Invoice
                                                                         </Link>
-                                                                    </DropdownMenuItem>
-                                                                    <DropdownMenuItem disabled>
-                                                                        To Sale Order <span className="text-[10px] ml-2 text-slate-400">(Pro)</span>
                                                                     </DropdownMenuItem>
                                                                 </DropdownMenuContent>
                                                             </DropdownMenu>
@@ -209,13 +215,13 @@ export default async function QuotationsPage() {
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end" className="w-40">
                                                                 <DropdownMenuItem asChild>
-                                                                    <Link href={`/dashboard/quotations/${q.id}`} className="flex items-center gap-2 cursor-pointer">
+                                                                    <Link href={`/dashboard/invoices/proforma/${q.id}`} className="flex items-center gap-2 cursor-pointer">
                                                                         <Eye className="h-3.5 w-3.5" /> View
                                                                     </Link>
                                                                 </DropdownMenuItem>
                                                                 {isOpen && (
                                                                     <DropdownMenuItem asChild>
-                                                                        <Link href={`/dashboard/quotations/${q.id}/edit`} className="flex items-center gap-2 cursor-pointer">
+                                                                        <Link href={`/dashboard/invoices/proforma/${q.id}/edit`} className="flex items-center gap-2 cursor-pointer">
                                                                             <Edit className="h-3.5 w-3.5" /> Edit
                                                                         </Link>
                                                                     </DropdownMenuItem>

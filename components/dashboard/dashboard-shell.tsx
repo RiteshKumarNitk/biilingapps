@@ -118,9 +118,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
                     </div>
 
                     {/* Center Section: Welcome (Hidden on small mobile) */}
-                    <div className="hidden lg:flex items-center justify-center flex-1">
+                    {/* <div className="hidden lg:flex items-center justify-center flex-1">
                         <h1 className="text-lg font-semibold text-slate-800">Welcome to Vyapar</h1>
-                    </div>
+                    </div> */}
 
                     {/* Right Section: Actions */}
                     <div className="flex items-center gap-2 md:gap-3 justify-end flex-1">
@@ -150,6 +150,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                         <Button size="icon" variant="ghost" className="rounded-full text-slate-600 hover:bg-slate-100">
                             <MoreVertical className="h-5 w-5" />
                         </Button>
+                        <UserNav />
                     </div>
                 </header>
 

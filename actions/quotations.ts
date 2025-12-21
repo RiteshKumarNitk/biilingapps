@@ -1,8 +1,45 @@
-
 'use server'
 
 import { createClient } from '@/utils/supabase/server'
 import { revalidatePath } from 'next/cache'
+
+export async function getQuotations(type: 'estimate' | 'proforma' = 'estimate') {
+    const supabase = await createClient()
+
+    // Fetch all quotations ordered by date
+    // Note: Assuming 'type' column exists. If migration wasn't run, this might fail unless column exists.
+    // If column doesn't exist yet, we only filter if it exists (dynamically? No, let's assume it exists or fallback).
+    // For safety since migration might have been skipped/failed, we try-catch or just select * first.
+    // But correct way is to trust the schema update.
+
+    const { data, error } = await supabase
+        .from('quotations')
+        .select('*')
+        .eq('type', type)
+        .order('date', { ascending: false })
+
+    if (error) throw new Error(error.message)
+
+    // Calculate Summary Stats
+    const summary = {
+        total: 0,
+        converted: 0,
+        open: 0
+    }
+
+    data?.forEach(q => {
+        const amount = q.grand_total || 0
+        summary.total += amount
+        if (q.status === 'converted') {
+            summary.converted += amount
+        } else if (q.status === 'open' || q.status === 'sent') { // Treat 'sent' as Open
+            summary.open += amount
+        }
+        // Closed?
+    })
+
+    return { data, summary }
+}
 
 export async function createQuotation(data: any) {
     const supabase = await createClient()
@@ -24,6 +61,7 @@ export async function createQuotation(data: any) {
             grand_total: data.grand_total,
             notes: data.notes,
             status: 'sent', // Default to sent/draft
+            type: data.type || 'estimate', // 'estimate' or 'proforma'
             tenant_id: tenantData
         })
         .select()

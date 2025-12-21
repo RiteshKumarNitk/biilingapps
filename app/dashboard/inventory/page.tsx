@@ -68,8 +68,8 @@ export default function InventoryPage() {
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] bg-[#F5F7FA]">
             {/* 1. TOP HEADER (INVENTORY) */}
-            <header className="bg-white px-4 h-14 flex items-center justify-between shadow-sm z-20 shrink-0 border-b relative">
-                {/* Left: Search Global */}
+            {/* <header className="bg-white px-4 h-14 flex items-center justify-between shadow-sm z-20 shrink-0 border-b relative">
+
                 <div className="w-1/3 max-w-sm relative">
                     <Search className="text-slate-400 absolute left-3 top-2.5 h-4 w-4" />
                     <input
@@ -78,7 +78,6 @@ export default function InventoryPage() {
                     />
                 </div>
 
-                {/* Right: Actions */}
                 <div className="flex items-center gap-3">
                     <Link href="/dashboard/invoices/new">
                         <Button className="bg-red-500 hover:bg-red-600 text-white font-semibold h-9 rounded-full px-5 shadow-sm border border-red-600">
@@ -103,7 +102,7 @@ export default function InventoryPage() {
                         <MoreVertical className="h-5 w-5" />
                     </Button>
                 </div>
-            </header>
+            </header> */}
 
             {/* 2. TABS */}
             <InventoryTabs activeTab={activeTab} onTabChange={setActiveTab} />

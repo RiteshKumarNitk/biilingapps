@@ -12,6 +12,8 @@ import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import Link from 'next/link'
 
+import { AdjustItemDialog } from '@/components/inventory/adjust-item-dialog'
+
 interface ProductManagerProps {
     items: any[]
     transactions?: any[] // Mapping of itemId -> transactions[] could be heavy. We might fetch on select.
@@ -21,6 +23,7 @@ interface ProductManagerProps {
 
 export function ProductManager({ items, selectedItem, onSelect }: ProductManagerProps) {
     const [search, setSearch] = useState('')
+    const [adjustDialogOpen, setAdjustDialogOpen] = useState(false)
 
     const filteredItems = useMemo(() => {
         return items.filter(i =>
@@ -101,7 +104,10 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                                         <ExternalLink className="h-4 w-4" />
                                     </Button>
                                 </div>
-                                <Button className="bg-blue-600 hover:bg-blue-700 text-white font-semibold">
+                                <Button
+                                    className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
+                                    onClick={() => setAdjustDialogOpen(true)}
+                                >
                                     <SlidersHorizontal className="h-4 w-4 mr-2" /> ADJUST ITEM
                                 </Button>
                             </div>
@@ -180,6 +186,12 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                     </div>
                 )}
             </main>
+
+            <AdjustItemDialog
+                open={adjustDialogOpen}
+                onOpenChange={setAdjustDialogOpen}
+                product={selectedItem}
+            />
         </div>
     )
 }

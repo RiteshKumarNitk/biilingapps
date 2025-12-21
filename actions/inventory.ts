@@ -196,3 +196,74 @@ export async function getAdjustmentHistory() {
 
     return data
 }
+
+export type BulkUpdateItem = {
+    id: string
+    [key: string]: any
+}
+
+export async function bulkUpdateProducts(updates: BulkUpdateItem[]) {
+    const supabase = await createClient()
+
+    // Process in parallel (limit generic concurrency if needed, but for <100 ok)
+    const promises = updates.map(item => {
+        const { id, ...rest } = item
+        return supabase.from('products').update(rest).eq('id', id)
+    })
+
+    const results = await Promise.all(promises)
+    const errors = results.filter(r => r.error)
+
+    if (errors.length > 0) {
+        throw new Error(`Failed to update ${errors.length} items`)
+    }
+
+    revalidatePath('/dashboard/inventory')
+    revalidatePath('/dashboard/utilities/bulk-gst')
+}
+
+export type BulkStockUpdate = {
+    id: string
+    current_stock: number
+    adjustment_type: 'ADD' | 'REDUCE'
+    quantity: number
+    reason: string
+}
+
+export async function bulkAdjustStock(updates: BulkStockUpdate[]) {
+    const supabase = await createClient()
+
+    const promises = updates.map(async (item) => {
+        const { id, current_stock, adjustment_type, quantity, reason } = item
+
+        if (quantity <= 0) return // Skip 0 changes
+
+        const newStock = adjustment_type === 'ADD'
+            ? current_stock + quantity
+            : current_stock - quantity
+
+        // Update product
+        const { error: pError } = await supabase.from('products').update({ stock_quantity: newStock }).eq('id', id)
+        if (pError) return { error: pError }
+
+        // Record movement
+        const { error: mError } = await supabase.from('stock_movements').insert({
+            product_id: id,
+            type: adjustment_type === 'ADD' ? 'ADJUSTMENT_ADD' : 'ADJUSTMENT_REDUCE',
+            quantity: quantity,
+            description: `Bulk Adjustment: ${reason}`,
+            created_at: new Date().toISOString()
+        })
+        return { error: mError }
+    })
+
+    const results = await Promise.all(promises)
+    const errors = results.filter(r => r?.error)
+
+    if (errors.length > 0) {
+        throw new Error(`Failed to update stock for some items`)
+    }
+
+    revalidatePath('/dashboard/inventory')
+    revalidatePath('/dashboard/utilities/bulk-gst')
+}
