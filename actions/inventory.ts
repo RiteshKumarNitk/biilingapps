@@ -267,3 +267,51 @@ export async function bulkAdjustStock(updates: BulkStockUpdate[]) {
     revalidatePath('/dashboard/inventory')
     revalidatePath('/dashboard/utilities/bulk-gst')
 }
+
+export async function renameCategory(oldName: string, newName: string) {
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('products')
+        .update({ category: newName })
+        .eq('category', oldName)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/dashboard/inventory')
+}
+
+export async function deleteCategory(name: string) {
+    // We treat "delete" as "uncategorize" to be safe, or we could delete items?
+    // User request "delete if not required". Usually means delete the category label.
+    // So we set items to "General" or null.
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('products')
+        .update({ category: 'General' })
+        .eq('category', name)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/dashboard/inventory')
+}
+
+export async function renameUnit(oldName: string, newName: string) {
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('products')
+        .update({ unit: newName })
+        .eq('unit', oldName)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/dashboard/inventory')
+}
+
+export async function deleteUnit(name: string) {
+    // Revert to 'pcs' or default
+    const supabase = await createClient()
+    const { error } = await supabase
+        .from('products')
+        .update({ unit: 'pcs' })
+        .eq('unit', name)
+
+    if (error) throw new Error(error.message)
+    revalidatePath('/dashboard/inventory')
+}

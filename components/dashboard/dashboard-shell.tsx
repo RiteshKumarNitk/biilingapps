@@ -88,7 +88,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                 {/* Top Header */}
                 <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-white px-4 shadow-sm">
                     {/* Left Section: Mobile Menu & Search */}
-                    <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center my-4 gap-4 flex-1">
                         <Sheet>
                             <SheetTrigger asChild>
                                 <Button variant="ghost" size="icon" className="md:hidden">
@@ -141,7 +141,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
                         {/* Icons */}
                         <Button size="icon" variant="ghost" className="rounded-full text-slate-600 hover:bg-slate-100">
-                            <Plus className="h-5 w-5" />
+                            <Bell className="h-5 w-5" />
                         </Button>
                         <div className="hidden md:flex items-center gap-1 text-xs text-slate-500 border rounded-full px-3 py-1 bg-slate-50">
                             <Phone className="h-3 w-3" />

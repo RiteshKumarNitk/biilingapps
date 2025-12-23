@@ -45,7 +45,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
-import { createParty } from '@/actions/parties' // We'll need to update this action
+import { createParty, updateParty } from '@/actions/parties'
 import { partySchema, PartyFormValues } from '@/lib/schemas/party'
 
 const INDIAN_STATES = [
@@ -65,27 +65,38 @@ const GST_TYPES = [
     "SEZ"
 ]
 
-export function PartyForm() {
+interface PartyFormProps {
+    initialData?: any
+    partyId?: string
+}
+
+export function PartyForm({ initialData, partyId }: PartyFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState("gst-address")
 
+    // Determine default balance type from initial data or default to 'to_receive'
+    // If it's a customer, we usually receive money (Debit balance in traditional accounting, but here 'to_receive' is simpler term)
+    // Actually simplicity: if type is supplier => to_pay, else to_receive
+    const defaultBalanceType = initialData?.type === 'supplier' ? 'to_pay' : 'to_receive'
+
     const form = useForm<PartyFormValues>({
         resolver: zodResolver(partySchema) as any,
         defaultValues: {
-            name: '',
-            gstin: '',
-            phone: '',
-            gst_type: "Unregistered/Consumer",
-            state: '',
-            email: '',
-            billing_address: '',
-            shipping_address: '',
-            is_shipping_same: true,
-            opening_balance: 0,
-            as_of_date: new Date(),
-            credit_limit: 0,
-            is_custom_credit_limit: false,
+            name: initialData?.name || '',
+            gstin: initialData?.gstin || '',
+            phone: initialData?.phone || '',
+            gst_type: initialData?.gst_type || "Unregistered/Consumer",
+            state: initialData?.state || '',
+            email: initialData?.email || '',
+            billing_address: initialData?.billing_address || '',
+            shipping_address: initialData?.shipping_address || '',
+            is_shipping_same: initialData ? (initialData.billing_address === initialData.shipping_address) : true,
+            opening_balance: initialData?.opening_balance || 0,
+            balance_type: defaultBalanceType,
+            as_of_date: initialData?.as_of_date ? new Date(initialData.as_of_date) : new Date(),
+            credit_limit: initialData?.credit_limit || 0,
+            is_custom_credit_limit: (initialData?.credit_limit || 0) > 0,
         }
     })
 
@@ -105,24 +116,30 @@ export function PartyForm() {
                 shipping_address: data.is_shipping_same ? data.billing_address : data.shipping_address
             }
 
-            // Call Server Action
-            await createParty(submissionData)
-
-            toast.success('Party saved successfully')
+            if (partyId) {
+                await updateParty(partyId, submissionData)
+                toast.success('Party updated successfully')
+            } else {
+                await createParty(submissionData)
+                toast.success('Party created successfully')
+            }
 
             if (shouldRedirect) {
                 router.push('/dashboard/parties')
             } else {
-                // Reset form but keep some defaults if needed
-                form.reset({
-                    ...data, // maybe verify what to keep? usually clear everything
-                    name: '',
-                    gstin: '',
-                    phone: '',
-                    email: '',
-                    opening_balance: 0
-                })
-                router.refresh()
+                if (!partyId) {
+                    // Reset only if creating new
+                    form.reset({
+                        name: '',
+                        gstin: '',
+                        phone: '',
+                        email: '',
+                        opening_balance: 0,
+                        billing_address: '',
+                        shipping_address: ''
+                    })
+                    router.refresh()
+                }
             }
         } catch (error: any) {
             console.error(error)

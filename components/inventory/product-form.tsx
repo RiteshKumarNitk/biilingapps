@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm, useFieldArray } from 'react-hook-form'
@@ -63,9 +63,9 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Separator } from '@/components/ui/separator'
 
 import { productSchema, ProductFormValues } from '@/lib/schemas/product'
-import { createProduct, updateProduct } from '@/actions/inventory'
+import { createProduct, updateProduct, getUnits } from '@/actions/inventory'
 
-const UNITS = ["pcs", "box", "kg", "ltr", "mtr", "g", "ml", "dz"]
+const DEFAULT_UNITS = ["pcs", "box", "kg", "ltr", "mtr", "g", "ml", "dz"]
 const CATEGORIES = ["General", "Electronics", "Groceries", "Services", "Hardware"]
 const GST_SLABS = [0, 5, 12, 18, 28]
 
@@ -78,6 +78,27 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState("pricing")
+    const [units, setUnits] = useState(DEFAULT_UNITS)
+    const [isAddingUnit, setIsAddingUnit] = useState(false)
+    const [newUnitName, setNewUnitName] = useState("")
+
+    useEffect(() => {
+        // Fetch existing units from DB to populate dropdown
+        getUnits().then(data => {
+            const dbUnits = data.map(u => u.name)
+            setUnits(prev => Array.from(new Set([...prev, ...dbUnits])))
+        })
+    }, [])
+
+    const handleAddUnit = () => {
+        if (newUnitName && !units.includes(newUnitName.toLowerCase())) {
+            setUnits(prev => [...prev, newUnitName.toLowerCase()])
+            form.setValue('unit', newUnitName.toLowerCase())
+            setNewUnitName("")
+            setIsAddingUnit(false)
+            toast.success("Unit added temporarily. Save product to persist.")
+        }
+    }
 
     const form = useForm<ProductFormValues>({
         resolver: zodResolver(productSchema) as any,
@@ -253,19 +274,48 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                     name="unit"
                                     render={({ field }) => (
                                         <FormItem>
-                                            <FormLabel className="text-slate-600">Select Unit</FormLabel>
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
-                                                <FormControl>
-                                                    <SelectTrigger className="h-10 border-slate-300">
-                                                        <SelectValue placeholder="Select Unit" />
-                                                    </SelectTrigger>
-                                                </FormControl>
-                                                <SelectContent>
-                                                    {UNITS.map(u => (
-                                                        <SelectItem key={u} value={u}>{u.toUpperCase()}</SelectItem>
-                                                    ))}
-                                                </SelectContent>
-                                            </Select>
+                                            <div className="flex items-center justify-between">
+                                                <FormLabel className="text-slate-600">Select Unit</FormLabel>
+                                                {!isAddingUnit && (
+                                                    <button
+                                                        type="button"
+                                                        className="text-xs text-blue-600 font-medium hover:underline flex items-center gap-1"
+                                                        onClick={(e) => { e.preventDefault(); setIsAddingUnit(true); }}
+                                                    >
+                                                        <Plus className="h-3 w-3" /> Add New
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {isAddingUnit ? (
+                                                <div className="flex gap-2 items-center">
+                                                    <Input
+                                                        value={newUnitName}
+                                                        onChange={(e) => setNewUnitName(e.target.value)}
+                                                        placeholder="Ex. box, kg"
+                                                        className="h-10 border-slate-300"
+                                                        autoFocus
+                                                    />
+                                                    <Button type="button" size="icon" onClick={(e) => { e.preventDefault(); handleAddUnit(); }} className="h-10 w-10 shrink-0 bg-green-600 hover:bg-green-700 text-white">
+                                                        <Plus className="h-4 w-4" />
+                                                    </Button>
+                                                    <Button type="button" size="icon" variant="ghost" onClick={() => setIsAddingUnit(false)} className="h-10 w-10 shrink-0 text-slate-500">
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            ) : (
+                                                <Select onValueChange={field.onChange} value={field.value}>
+                                                    <FormControl>
+                                                        <SelectTrigger className="h-10 border-slate-300">
+                                                            <SelectValue placeholder="Select Unit" />
+                                                        </SelectTrigger>
+                                                    </FormControl>
+                                                    <SelectContent>
+                                                        {units.map(u => (
+                                                            <SelectItem key={u} value={u}>{u.toUpperCase()}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
                                             <FormMessage />
                                         </FormItem>
                                     )}

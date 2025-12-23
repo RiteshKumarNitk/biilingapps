@@ -114,6 +114,7 @@ export default function InventoryPage() {
                         items={productList}
                         selectedItem={selectedProduct}
                         onSelect={setSelectedProduct}
+                        onRefresh={loadData}
                     />
                 )}
 
@@ -122,6 +123,7 @@ export default function InventoryPage() {
                         items={serviceList}
                         selectedItem={selectedService}
                         onSelect={setSelectedService}
+                        onRefresh={loadData}
                     />
                 )}
 
@@ -129,11 +131,12 @@ export default function InventoryPage() {
                     <CategoryManager
                         categories={categories}
                         products={products}
+                        onRefresh={loadData}
                     />
                 )}
 
                 {activeTab === 'units' && (
-                    <UnitManager units={units} />
+                    <UnitManager units={units} onRefresh={loadData} />
                 )}
             </div>
         </div>

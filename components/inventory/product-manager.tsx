@@ -1,8 +1,7 @@
-
 "use client"
 
-import { useState, useMemo } from 'react'
-import { Search, Plus, ExternalLink, MoreVertical, SlidersHorizontal, ArrowUpRight, ArrowDownLeft } from 'lucide-react'
+import { useState, useMemo, useEffect } from 'react'
+import { Search, Plus, ExternalLink, MoreVertical, SlidersHorizontal, ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,25 +10,64 @@ import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@
 import { cn } from '@/lib/utils'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 import { AdjustItemDialog } from '@/components/inventory/adjust-item-dialog'
+import { getProductTransactions, deleteProduct } from '@/actions/inventory'
 
 interface ProductManagerProps {
     items: any[]
-    transactions?: any[] // Mapping of itemId -> transactions[] could be heavy. We might fetch on select.
+    transactions?: any[]
     onSelect: (item: any) => void
     selectedItem: any | null
+    onRefresh?: () => void
 }
 
-export function ProductManager({ items, selectedItem, onSelect }: ProductManagerProps) {
+export function ProductManager({ items, selectedItem, onSelect, onRefresh }: ProductManagerProps) {
     const [search, setSearch] = useState('')
     const [adjustDialogOpen, setAdjustDialogOpen] = useState(false)
+    const [transactions, setTransactions] = useState<any[]>([])
+    const [loadingTxns, setLoadingTxns] = useState(false)
+    const router = useRouter()
 
     const filteredItems = useMemo(() => {
         return items.filter(i =>
             i.name.toLowerCase().includes(search.toLowerCase())
         )
     }, [items, search])
+
+    useEffect(() => {
+        if (selectedItem?.id) {
+            setLoadingTxns(true)
+            getProductTransactions(selectedItem.id)
+                .then(data => setTransactions(data || []))
+                .catch(err => console.error(err))
+                .finally(() => setLoadingTxns(false))
+        } else {
+            setTransactions([])
+        }
+    }, [selectedItem])
+
+    const handleDelete = async () => {
+        if (!selectedItem) return
+        if (confirm(`Are you sure you want to delete ${selectedItem.name}?`)) {
+            try {
+                await deleteProduct(selectedItem.id)
+                toast.success("Product deleted")
+                if (onRefresh) onRefresh()
+                onSelect(null)
+            } catch (error: any) {
+                toast.error(error.message)
+            }
+        }
+    }
 
     return (
         <div className="flex flex-1 overflow-hidden h-full">
@@ -87,8 +125,6 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                         <div className="p-8 text-center text-slate-400 text-sm">No items found</div>
                     )}
                 </ScrollArea>
-
-                {/* Removed Bottom Add Button as we moved it top */}
             </aside>
 
             {/* RIGHT PANEL: DETAILS */}
@@ -100,9 +136,28 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-center gap-2">
                                     <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">{selectedItem.name}</h2>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6 text-slate-400">
-                                        <ExternalLink className="h-4 w-4" />
-                                    </Button>
+
+                                    <Link href={`/dashboard/inventory/${selectedItem.id}`}>
+                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600">
+                                            <Pencil className="h-4 w-4" />
+                                        </Button>
+                                    </Link>
+
+                                    <DropdownMenu>
+                                        <DropdownMenuTrigger asChild>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600">
+                                                <MoreVertical className="h-4 w-4" />
+                                            </Button>
+                                        </DropdownMenuTrigger>
+                                        <DropdownMenuContent align="start">
+                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/inventory/${selectedItem.id}`)}>
+                                                <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={handleDelete}>
+                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                                            </DropdownMenuItem>
+                                        </DropdownMenuContent>
+                                    </DropdownMenu>
                                 </div>
                                 <Button
                                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"
@@ -158,20 +213,52 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                                         <TableRow className="h-9 hover:bg-slate-50">
                                             <TableHead className="w-[10px]"></TableHead>
                                             <TableHead className="text-xs font-bold text-slate-500 h-9">TYPE</TableHead>
-                                            <TableHead className="text-xs font-bold text-slate-500 h-9">INVOICE #</TableHead>
-                                            <TableHead className="text-xs font-bold text-slate-500 h-9">NAME</TableHead>
+                                            <TableHead className="text-xs font-bold text-slate-500 h-9">DESCRIPTION</TableHead>
                                             <TableHead className="text-xs font-bold text-slate-500 h-9">DATE</TableHead>
                                             <TableHead className="text-xs font-bold text-slate-500 h-9 text-right">QUANTITY</TableHead>
-                                            <TableHead className="text-xs font-bold text-slate-500 h-9 text-right">PRICE/UNIT</TableHead>
-                                            <TableHead className="text-xs font-bold text-slate-500 h-9">STATUS</TableHead>
+                                            <TableHead className="text-xs font-bold text-slate-500 h-9 text-right">STATUS</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="h-32 text-center text-slate-400 text-xs">
-                                                No transactions found for this item.
-                                            </TableCell>
-                                        </TableRow>
+                                        {loadingTxns ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-xs">
+                                                    Loading transactions...
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : transactions.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-xs">
+                                                    No transactions found for this item.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            transactions.map((txn, i) => (
+                                                <TableRow key={txn.id || i} className="hover:bg-slate-50 text-xs border-b-slate-100">
+                                                    <TableCell></TableCell>
+                                                    <TableCell className="font-semibold text-slate-700 uppercase">
+                                                        <Badge variant="outline" className={cn(
+                                                            "font-mono text-[10px] px-1 py-0",
+                                                            txn.type === 'in' || txn.type === 'purchase_received' || txn.type === 'ADJUSTMENT_ADD' ? "text-green-600 bg-green-50 border-green-200" : "text-red-600 bg-red-50 border-red-200"
+                                                        )}>
+                                                            {txn.type?.replace(/_/g, ' ')}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-600 font-medium">
+                                                        {txn.description || txn.description || txn.notes || '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-slate-500">
+                                                        {format(new Date(txn.created_at), 'dd MMM yyyy')}
+                                                    </TableCell>
+                                                    <TableCell className="text-right font-mono font-medium text-slate-700">
+                                                        {txn.quantity}
+                                                    </TableCell>
+                                                    <TableCell className="text-right text-slate-500">
+                                                        Completed
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
                                     </TableBody>
                                 </Table>
                             </div>
@@ -191,6 +278,7 @@ export function ProductManager({ items, selectedItem, onSelect }: ProductManager
                 open={adjustDialogOpen}
                 onOpenChange={setAdjustDialogOpen}
                 product={selectedItem}
+                onSuccess={onRefresh}
             />
         </div>
     )
