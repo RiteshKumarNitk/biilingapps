@@ -104,6 +104,10 @@ create table if not exists public.invoices (
   due_date date,
   party_id uuid references public.parties on delete set null,
   party_name text, -- Cache name in case party is deleted
+  party_address text, -- New
+  shipping_address text, -- New
+  party_phone text, -- New
+  party_email text, -- New
   status text check (status in ('draft', 'generated', 'paid', 'overdue', 'cancelled')) default 'draft',
   
   subtotal numeric(12, 2) default 0,
@@ -156,6 +160,7 @@ create table if not exists public.invoice_items (
   unit_price numeric(10, 2) not null,
   gst_rate numeric(5, 2) default 0,
   tax_amount numeric(10, 2) default 0,
+  discount numeric(10, 2) default 0,
   total_amount numeric(10, 2) not null
 );
 
@@ -391,6 +396,10 @@ create table if not exists public.quotations (
   valid_until date,
   party_id uuid references public.parties on delete set null,
   party_name text,
+  party_address text, -- New
+  shipping_address text, -- New
+  party_phone text, -- New
+  party_email text, -- New
   status text check (status in ('draft', 'sent', 'accepted', 'rejected', 'converted')) default 'draft',
   
   subtotal numeric(12, 2) default 0,
@@ -415,6 +424,7 @@ create table if not exists public.quotation_items (
   unit_price numeric(10, 2) not null,
   gst_rate numeric(5, 2) default 0,
   tax_amount numeric(10, 2) default 0,
+  discount numeric(10, 2) default 0,
   total_amount numeric(10, 2) not null
 );
 

@@ -85,7 +85,7 @@ export function TransactionTable({ items, setItems, products }: TransactionTable
             quantity: 1,
             unit: 'PCS',
             price: 0,
-            taxType: 'exclusive',
+            taxType: 'inclusive',
             discountValue: 0,
             discountType: 'percentage',
             gstRate: 0,

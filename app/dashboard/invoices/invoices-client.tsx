@@ -3,12 +3,21 @@
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
-import { Eye, Printer, Share2 } from "lucide-react"
+import { Eye, Printer, Share2, MoreHorizontal, Copy, Trash2 } from "lucide-react"
 import Link from "next/link"
 import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Define the Invoice type based on the data structure
-// Simplified for display
 export type Invoice = {
     id: string
     date: string
@@ -22,63 +31,114 @@ export type Invoice = {
 export const columns: ColumnDef<Invoice>[] = [
     {
         accessorKey: "date",
-        header: "DATE",
-        cell: ({ row }) => format(new Date(row.getValue("date")), "dd/MM/yyyy"),
-    },
-    {
-        accessorKey: "invoice_number",
-        header: "INVOICE NO",
-    },
-    {
-        accessorKey: "party_name",
-        header: "PARTY NAME",
-    },
-    {
-        id: "type",
-        header: "TRANSACTION TYPE",
-        cell: () => "Sale",
-    },
-    {
-        accessorKey: "payment_status",
-        header: "PAYMENT TYPE",
+        header: "Date",
         cell: ({ row }) => (
-            <span className="capitalize">{row.getValue("payment_status") || "Unpaid"}</span>
+            <div className="font-medium text-slate-600">
+                {format(new Date(row.getValue("date")), "dd MMM yyyy")}
+            </div>
         ),
     },
     {
+        accessorKey: "invoice_number",
+        header: "Invoice #",
+        cell: ({ row }) => (
+            <div className="font-semibold text-slate-800">
+                {row.getValue("invoice_number")}
+            </div>
+        ),
+    },
+    {
+        accessorKey: "party_name",
+        header: "Client",
+        cell: ({ row }) => (
+            <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600 border border-blue-100 uppercase">
+                    {(row.getValue("party_name") as string || 'U').substring(0, 2)}
+                </div>
+                <span className="font-medium text-slate-700">{row.getValue("party_name")}</span>
+            </div>
+        ),
+    },
+    {
+        accessorKey: "payment_status",
+        header: "Status",
+        cell: ({ row }) => {
+            const status = row.getValue("payment_status") as string
+            let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
+            let className = ""
+
+            if (status === 'paid') {
+                className = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
+                variant = "secondary" // using custom class instead of relying purely on variants
+            } else if (status === 'partial') {
+                className = "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
+                variant = "secondary"
+            } else {
+                className = "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
+                variant = "secondary"
+            }
+
+            return (
+                <Badge variant={variant} className={`capitalize font-normal px-2.5 py-0.5 ${className}`}>
+                    {status || "Unpaid"}
+                </Badge>
+            )
+        },
+    },
+    {
         accessorKey: "grand_total",
-        header: () => <div className="text-right">AMOUNT</div>,
+        header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
             const amount = parseFloat(row.getValue("grand_total"))
-            return <div className="text-right font-semibold text-slate-700">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            return <div className="text-right font-bold text-slate-800">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
         },
     },
     {
         id: "balance",
-        header: () => <div className="text-right">BALANCE</div>,
+        header: () => <div className="text-right">Balance</div>,
         cell: ({ row }) => {
             // Simple logic: if paid 0, else total
             const status = row.getValue("payment_status")
             const total = parseFloat(row.getValue("grand_total"))
             const balance = status === 'paid' ? 0 : total
-            return <div className="text-right text-slate-500">₹ {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+            return <div className="text-right text-slate-500 font-medium">₹ {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
         },
     },
     {
         id: "actions",
-        header: () => <div className="text-right pr-6">ACTIONS</div>,
+        enableHiding: false,
         cell: ({ row }) => {
             const invoice = row.original
             return (
-                <div className="flex justify-end gap-3 text-slate-300 pr-6">
-                    <Link href={`/dashboard/invoices/${invoice.id}`} title="View Details">
-                        <Eye className="h-4 w-4 hover:text-blue-600 cursor-pointer text-slate-400" />
-                    </Link>
-                    <Link href={`/print/invoices/${invoice.id}`} target="_blank" title="Print Preview">
-                        <Printer className="h-4 w-4 hover:text-slate-600 cursor-pointer" />
-                    </Link>
-                    <Share2 className="h-4 w-4 hover:text-slate-600 cursor-pointer" />
-                    <DeleteInvoiceButton id={invoice.id} />
+                <div className="text-right">
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" className="h-8 w-8 p-0 text-slate-400 hover:text-slate-600">
+                                <span className="sr-only">Open menu</span>
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-[160px]">
+                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/dashboard/invoices/${invoice.id}`} className="cursor-pointer">
+                                    <Eye className="mr-2 h-4 w-4" /> View
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                                <Link href={`/print/invoices/${invoice.id}`} target="_blank" className="cursor-pointer">
+                                    <Printer className="mr-2 h-4 w-4" /> Print
+                                </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                                <Copy className="mr-2 h-4 w-4" /> Copy ID
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <div className="px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer">
+                                <DeleteInvoiceButton id={invoice.id} />
+                            </div>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
                 </div>
             )
         },
@@ -87,6 +147,11 @@ export const columns: ColumnDef<Invoice>[] = [
 
 export function InvoicesClient({ data }: { data: Invoice[] }) {
     return (
-        <DataTable columns={columns} data={data} searchKey="party_name" searchPlaceholder="Search by party..." />
+        <DataTable
+            columns={columns}
+            data={data}
+            searchKey="party_name"
+            searchPlaceholder="Filter clients..."
+        />
     )
 }

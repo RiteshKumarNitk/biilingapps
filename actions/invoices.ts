@@ -92,10 +92,14 @@ export async function createInvoice(data: InvoiceFormValues) {
             due_date: validated.due_date?.toISOString(),
             status: validated.status,
             payment_status: validated.payment_status,
+            party_address: validated.party_address,
+            shipping_address: validated.shipping_address,
+            party_phone: validated.party_phone,
+            party_email: validated.party_email,
+            notes: validated.notes,
             // Calculate totals
             subtotal: validated.items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0),
             grand_total: validated.items.reduce((acc, item) => acc + item.total_amount, 0),
-            // received_amount: 0, // Removed to fix missing column error
         })
         .select()
         .single()

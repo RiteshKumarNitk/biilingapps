@@ -1,7 +1,7 @@
 
 import { getPurchaseBills, getPurchaseStats } from '@/actions/purchase'
 import { Button } from '@/components/ui/button'
-import { Plus, Search } from 'lucide-react'
+import { Plus, Search, CheckCircle2, ShoppingBag, Filter, Download } from 'lucide-react'
 import Link from 'next/link'
 import { PurchaseBillsClient } from './purchase-bills-client'
 import { Card, CardContent } from '@/components/ui/card'
@@ -12,11 +12,12 @@ import { parseISO } from 'date-fns'
 export default async function PurchaseBillsPage({
     searchParams,
 }: {
-    searchParams: { [key: string]: string | string[] | undefined }
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-    const search = typeof searchParams.search === 'string' ? searchParams.search : undefined
-    const startDateParam = typeof searchParams.startDate === 'string' ? searchParams.startDate : undefined
-    const endDateParam = typeof searchParams.endDate === 'string' ? searchParams.endDate : undefined
+    const params = await searchParams
+    const search = typeof params.search === 'string' ? params.search : undefined
+    const startDateParam = typeof params.startDate === 'string' ? params.startDate : undefined
+    const endDateParam = typeof params.endDate === 'string' ? params.endDate : undefined
 
     let startDate: Date | undefined
     let endDate: Date | undefined
@@ -30,57 +31,94 @@ export default async function PurchaseBillsPage({
     ])
 
     return (
-        <div className="min-h-screen bg-[#F7F7F7] p-4 md:p-6 font-sans text-slate-800 space-y-5">
+        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <h1 className="text-xl font-semibold text-slate-700">Purchase Bills</h1>
-                <Link href="/dashboard/purchase/bills/new">
-                    <Button className="bg-[#EF4444] hover:bg-red-600 text-white rounded-full px-6 h-9 text-sm font-medium shadow-sm transition-all hover:shadow-md">
-                        <Plus className="h-4 w-4 mr-1.5" /> Add Bill
-                    </Button>
-                </Link>
-            </div>
-
-            {/* Filters */}
-            <Card className="rounded-xl border-none shadow-sm bg-white">
-                <CardContent className="p-3 flex items-center flex-wrap gap-3 sm:gap-4 text-sm">
-                    <DatePickerWithRange />
-                    <form className="flex items-center gap-2 ml-auto">
-                        <div className="relative">
-                            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                            <Input
-                                name="search"
-                                placeholder="Search party..."
-                                defaultValue={search}
-                                className="h-9 pl-9 w-[200px] bg-slate-50 border-slate-200 focus-visible:ring-1 rounded-full text-sm"
-                            />
-                        </div>
-                    </form>
-                </CardContent>
-            </Card>
-
-            {/* Summary */}
-            <Card className="rounded-xl border-none shadow-sm bg-white overflow-hidden">
-                <div className="flex p-6 items-center gap-6">
-                    <div>
-                        <p className="text-slate-500 text-sm font-medium mb-1">Total Purchases</p>
-                        <h2 className="text-2xl font-bold text-slate-800">
-                            ₹ {stats.total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </h2>
-                    </div>
-                    <div className="h-10 w-px bg-slate-100"></div>
-                    <div>
-                        <p className="text-slate-500 text-sm font-medium mb-1">Bills Count</p>
-                        <h2 className="text-xl font-semibold text-slate-700">
-                            {stats.count}
-                        </h2>
-                    </div>
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-slate-900">Purchase Bills</h1>
+                    <p className="text-sm text-slate-500 mt-1">Track and manage your purchase expenses.</p>
                 </div>
-            </Card>
-
-            {/* Transactions Section */}
-            <div className="bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden">
-                <PurchaseBillsClient data={bills as any[] || []} />
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" className="hidden sm:flex bg-white hover:bg-slate-50">
+                        <Download className="h-4 w-4 mr-2" /> Export
+                    </Button>
+                    <Link href="/dashboard/purchase/bills/new">
+                        <Button className="bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-200">
+                            <Plus className="h-4 w-4 mr-2" /> Add Bill
+                        </Button>
+                    </Link>
+                </div>
             </div>
+
+            {/* Stats Overview */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 opacity-5">
+                        <ShoppingBag className="h-24 w-24 text-orange-600" />
+                    </div>
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-orange-100/50 rounded-lg text-orange-600">
+                                <ShoppingBag className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Total Purchases</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
+                                    ₹ {stats.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                </h3>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-white relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 opacity-5">
+                        <CheckCircle2 className="h-24 w-24 text-indigo-600" />
+                    </div>
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-4">
+                            <div className="p-3 bg-blue-100/50 rounded-lg text-blue-600">
+                                <Plus className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-500">Total Bills</p>
+                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
+                                    {stats.count}
+                                </h3>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Placeholder for Balance/Due if available later */}
+                <Card className="rounded-xl border-none shadow-sm bg-white border-dashed border-slate-200 hidden lg:flex items-center justify-center">
+                    <p className="text-sm text-slate-400">More stats coming soon</p>
+                </Card>
+            </div>
+
+            {/* Filters & Actions Bar */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
+                <div className="relative flex-1 min-w-[200px] max-w-sm">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                        placeholder="Search supplier..."
+                        defaultValue={search}
+                        className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
+                    />
+                </div>
+
+                <div className="flex items-center gap-2">
+                    <DatePickerWithRange />
+                    <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 text-slate-500 hover:text-slate-700">
+                        <Filter className="h-4 w-4" />
+                    </Button>
+                </div>
+            </div>
+
+            {/* Data Table */}
+            <Card className="rounded-xl border-none shadow-sm overflow-hidden bg-white">
+                <PurchaseBillsClient data={bills as any[] || []} />
+            </Card>
         </div>
     )
 }

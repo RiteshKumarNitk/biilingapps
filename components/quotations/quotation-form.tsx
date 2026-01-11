@@ -38,6 +38,7 @@ const quotationSchema = z.object({
     date: z.date(),
     party_id: z.string().optional(),
     party_name: z.string().min(1, 'Required'),
+    discount_rate: z.number().min(0).max(100).optional(),
     items: z.array(z.object({
         product_id: z.string().optional(),
         description: z.string().min(1, 'Required'),
@@ -64,6 +65,7 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
         defaultValues: {
             quotation_number: `QTN-${Math.floor(Math.random() * 10000)}`,
             date: new Date(),
+            discount_rate: 0,
             items: [{ description: '', quantity: 1, unit_price: 0, gst_rate: 0, total_amount: 0 }],
         },
     })
@@ -78,9 +80,17 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
         name: 'items',
     })
 
+    const watchDiscount = useWatch({
+        control: form.control,
+        name: 'discount_rate'
+    }) || 0
+
     const subtotal = watchItems.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
     const totalTax = watchItems.reduce((acc, item) => acc + ((item.quantity * item.unit_price) * ((item.gst_rate || 0) / 100)), 0)
-    const grandTotal = subtotal + totalTax
+
+    // Discount is calculated on Subtotal
+    const discountAmount = (subtotal * watchDiscount) / 100
+    const grandTotal = Math.max(0, subtotal + totalTax - discountAmount)
 
     async function onSubmit(data: QuotationFormValues) {
         try {
@@ -90,12 +100,14 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
                 total_amount: (item.quantity * item.unit_price) * (1 + ((item.gst_rate || 0) / 100))
             }))
 
+            const calcDiscountAmount = (subtotal * (data.discount_rate || 0)) / 100
+
             await createQuotation({
                 ...data,
                 items: itemsWithTotals,
                 subtotal,
                 total_gst: totalTax,
-                discount_amount: 0,
+                discount_amount: calcDiscountAmount,
                 grand_total: grandTotal
             })
             toast.success('Quotation created')
@@ -295,11 +307,47 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
                     ))}
                 </div>
 
-                <div className="flex justify-end p-4 bg-muted/50 rounded-lg">
-                    <div className="text-right space-y-2">
-                        <div className="text-sm">Subtotal: <span className="font-medium">₹{subtotal.toFixed(2)}</span></div>
-                        <div className="text-sm">GST: <span className="font-medium">₹{totalTax.toFixed(2)}</span></div>
-                        <div className="text-xl font-bold">Total: ₹{grandTotal.toFixed(2)}</div>
+                <div className="flex flex-col items-end space-y-4 p-4 bg-muted/50 rounded-lg">
+                    <div className="w-full max-w-xs space-y-2">
+                        <div className="flex justify-between text-sm">
+                            <span>Subtotal:</span>
+                            <span className="font-medium">₹{subtotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                            <span>GST:</span>
+                            <span className="font-medium">₹{totalTax.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm">Discount (%):</span>
+                            <FormField
+                                control={form.control}
+                                name="discount_rate"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormControl>
+                                            <Input
+                                                type="number"
+                                                className="h-8 text-right bg-background"
+                                                placeholder="0"
+                                                min="0"
+                                                max="100"
+                                                {...field}
+                                                onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                            />
+                                        </FormControl>
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+                        <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Discount Amount:</span>
+                            <span>-₹{((subtotal * (watchDiscount || 0)) / 100).toFixed(2)}</span>
+                        </div>
+                        <Separator className="my-2" />
+                        <div className="flex justify-between text-xl font-bold">
+                            <span>Total:</span>
+                            <span>₹{grandTotal.toFixed(2)}</span>
+                        </div>
                     </div>
                 </div>
 

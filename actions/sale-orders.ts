@@ -35,7 +35,10 @@ export type CreateSaleOrderData = {
     items: SaleOrderItem[]
 }
 
-export async function getSaleOrders(search: string = '') {
+export async function getSaleOrders(
+    search: string = '',
+    dateRange?: { startDate?: Date, endDate?: Date }
+) {
     const supabase = await createClient()
 
     let query = supabase
@@ -47,10 +50,15 @@ export async function getSaleOrders(search: string = '') {
         .order('created_at', { ascending: false })
 
     if (search) {
-        // Simple search on order number or party name if possible
-        // Note: searching related table 'parties.name' is hard in simple syntax, so filtering in memory or complex query.
-        // We will stick to order number search for simplicity on server side or just fetch all and filter client side if small.
         query = query.ilike('order_number', `%${search}%`)
+    }
+
+    if (dateRange?.startDate) {
+        query = query.gte('date', dateRange.startDate.toISOString())
+    }
+
+    if (dateRange?.endDate) {
+        query = query.lte('date', dateRange.endDate.toISOString())
     }
 
     const { data: rawData, error } = await query
@@ -81,6 +89,35 @@ export async function getSaleOrders(search: string = '') {
     })
 
     return orders
+}
+
+export async function getSaleOrder(id: string) {
+    const supabase = await createClient()
+
+    // 1. Get Order
+    const { data: order, error: orderError } = await supabase
+        .from('sale_orders')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+    if (orderError) throw new Error(orderError.message)
+
+    // 2. Get Items
+    const { data: items, error: itemsError } = await supabase
+        .from('sale_order_items')
+        .select(`
+            *,
+            products (
+                name,
+                hsn_code
+            )
+        `)
+        .eq('sale_order_id', id)
+
+    if (itemsError) throw new Error(itemsError.message)
+
+    return { order, items }
 }
 
 export async function createSaleOrder(data: CreateSaleOrderData) {
@@ -126,6 +163,7 @@ export async function createSaleOrder(data: CreateSaleOrderData) {
         product_id: item.product_id,
         description: item.description,
         quantity: item.quantity,
+        unit: item.unit,
         unit_price: item.unit_price,
         gst_rate: item.gst_rate,
         tax_amount: item.tax_amount,

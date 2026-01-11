@@ -327,7 +327,14 @@ export function PrintableQuotation({ quotation, items, tenant }: PrintableQuotat
                             </div>
                             {discountAmount > 0 && (
                                 <div className="flex justify-between mb-2 text-sm text-red-600">
-                                    <span className="text-slate-600">Discount</span>
+                                    <span className="text-slate-600 font-medium">
+                                        Discount
+                                        {calculatedSubtotal > 0 && (
+                                            <span className="text-xs text-slate-400 ml-1 font-normal">
+                                                ({((discountAmount / calculatedSubtotal) * 100).toFixed(2)}%)
+                                            </span>
+                                        )}
+                                    </span>
                                     <span className="font-medium">-₹{discountAmount.toFixed(2)}</span>
                                 </div>
                             )}

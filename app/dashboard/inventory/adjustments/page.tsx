@@ -129,8 +129,8 @@ export default function StockAdustmentPage() {
                                 <Label>Quantity</Label>
                                 <Input
                                     type="number"
-                                    min="0.01"
-                                    step="0.01"
+                                    min="1"
+                                    step="1"
                                     value={quantity}
                                     onChange={(e) => setQuantity(parseFloat(e.target.value))}
                                     className="text-right font-mono"

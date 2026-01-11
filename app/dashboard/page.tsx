@@ -1,193 +1,237 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, ArrowDown, ArrowUp, MoreHorizontal, MessageCircle, BarChart3, FileText, ChevronDown, RefreshCw } from 'lucide-react'
+import { Plus, ArrowDown, ArrowUp, MessageCircle, BarChart3, FileText, TrendingUp, TrendingDown, Users, Package, CreditCard } from 'lucide-react'
 import Link from 'next/link'
-import { getDashboardStats, getOverviewChartData } from '@/actions/dashboard'
-import { Overview } from '@/components/dashboard/overview'
-import { SalesChart } from '@/components/dashboard/sales-chart' // New component I need to create
+import { getDashboardStats, getOverviewChartData, getSalesByCategory, getRecentSales, getInventoryStats, getCustomerStats, getOperationsStats } from '@/actions/dashboard'
+import { SalesChart } from '@/components/dashboard/sales-chart'
+import { CategoryChart } from '@/components/dashboard/category-chart'
+import { RecentTransactions } from '@/components/dashboard/recent-transactions'
+import { InventoryStats } from '@/components/dashboard/inventory-stats'
+import { CustomerStats } from '@/components/dashboard/customer-stats'
+import { OperationsStats } from '@/components/dashboard/operations-stats'
+import { DashboardDateFilter } from '@/components/dashboard/date-filter'
 
-export default async function DashboardPage() {
-    // Fetch real data
-    const stats = await getDashboardStats()
-    const overviewData = await getOverviewChartData()
+export default async function DashboardPage({
+    searchParams
+}: {
+    searchParams: Promise<{ period?: string }>
+}) {
+    const params = await searchParams
+    const period = params.period || 'this-month'
+
+    // Calculate backend Filters based on Period
+    // Actions are usually expecting discrete month/year if filtering strict.
+    // For 'period' logic, I'll pass simple undefined if 'all' or 'this-year' to let action handle defaults
+    // OR map perfectly here.
+
+    const now = new Date()
+    let filterMonth: number | undefined = undefined
+    let filterYear: number | undefined = undefined
+
+    if (period === 'this-month') {
+        filterMonth = now.getMonth()
+        filterYear = now.getFullYear()
+    } else if (period === 'last-month') {
+        filterMonth = now.getMonth() - 1
+        filterYear = now.getFullYear()
+        if (filterMonth < 0) {
+            filterMonth = 11
+            filterYear = now.getFullYear() - 1
+        }
+    } else if (period === 'this-year') {
+        // filterMonth remains undefined
+        filterYear = now.getFullYear()
+    } else if (period === 'all') {
+        // both undefined
+    }
+
+    const stats = await getDashboardStats(filterMonth, filterYear)
+    const overviewData = await getOverviewChartData(filterYear)
+    const categoryData = await getSalesByCategory()
+    const recentSales = await getRecentSales()
+    const inventoryStats = await getInventoryStats()
+    const customerStats = await getCustomerStats()
+    const operationsStats = await getOperationsStats()
 
     return (
         <div className="space-y-6">
+            {/* Context Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 className="text-2xl font-bold tracking-tight text-slate-800">Overview</h2>
+                    <p className="text-sm text-slate-500">Business performance summary</p>
+                </div>
+                <DashboardDateFilter />
+            </div>
 
-            {/* Top Summary Cards (KPIs) */}
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2 items-start">
-                {/* Total Receivable */}
-                <Card className="rounded-xl border-none shadow-sm overflow-hidden">
-                    <CardContent className="p-6 relative">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-slate-500 mb-1">Total Receivable</p>
-                                <div className="text-3xl font-bold text-slate-800">
-                                    ₹ {stats.totalReceivable?.toLocaleString() || '0'}
-                                </div>
-                                <p className="text-xs text-slate-400 mt-2">
-                                    From {stats.receivablePartiesCount} Parties
-                                </p>
-                            </div>
-                            <div className="bg-green-50 p-2 rounded-full">
-                                <ArrowDown className="h-5 w-5 text-green-600" />
-                            </div>
-                        </div>
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-green-500/20">
-                            <div className="h-full bg-green-500 w-3/4"></div>
+            {/* KPI Cards (Filtered) */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-3 opacity-10">
+                        <CreditCard className="h-16 w-16 text-blue-600" />
+                    </div>
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-500">Total Revenue</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-slate-900">₹{stats.totalRevenue.toLocaleString()}</div>
+                        <div className="flex items-center text-xs text-muted-foreground mt-1 gap-2">
+                            {stats.growthPercentage >= 0 ? (
+                                <span className="text-emerald-600 flex items-center font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
+                                    <TrendingUp className="h-3 w-3 mr-1" />
+                                    {stats.growthPercentage.toFixed(1)}%
+                                </span>
+                            ) : (
+                                <span className="text-red-600 flex items-center font-medium bg-red-50 px-1.5 py-0.5 rounded">
+                                    <TrendingDown className="h-3 w-3 mr-1" />
+                                    {Math.abs(stats.growthPercentage).toFixed(1)}%
+                                </span>
+                            )}
+                            <span className="opacity-70">
+                                {period === 'this-month' ? 'vs last month' : 'growth'}
+                            </span>
                         </div>
                     </CardContent>
                 </Card>
 
-                {/* Total Payable */}
-                <Card className="rounded-xl border-none shadow-sm overflow-hidden">
-                    <CardContent className="p-6 relative">
-                        <div className="flex justify-between items-start">
-                            <div>
-                                <p className="text-sm font-medium text-slate-500 mb-1">Total Payable</p>
-                                <div className="text-3xl font-bold text-slate-800">
-                                    ₹ {stats.totalPayable?.toLocaleString() || '0'}
-                                </div>
-                                <p className="text-xs text-slate-400 mt-2">
-                                    To {stats.payablePartiesCount} Parties
-                                </p>
-                            </div>
-                            <div className="bg-red-50 p-2 rounded-full">
-                                <ArrowUp className="h-5 w-5 text-red-600" />
-                            </div>
+                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-500">Total Sales</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-slate-900">{stats.salesCount}</div>
+                        <p className="text-xs text-slate-400 mt-1">Invoices in period</p>
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-500">Receivable</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-green-600">₹{stats.totalReceivable.toLocaleString()}</div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs font-medium bg-green-50 text-green-700 px-1.5 py-0.5 rounded">
+                                {stats.receivablePartiesCount} Parties
+                            </span>
                         </div>
-                        <div className="absolute bottom-0 left-0 w-full h-1 bg-red-500/20">
-                            <div className="h-full bg-red-500 w-1/4"></div>
+                    </CardContent>
+                </Card>
+
+                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
+                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium text-slate-500">Payable</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="text-2xl font-bold text-slate-900">₹{stats.totalPayable.toLocaleString()}</div>
+                        <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs font-medium bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
+                                {stats.payablePartiesCount} Parties
+                            </span>
                         </div>
                     </CardContent>
                 </Card>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-12 lg:grid-cols-12">
-                {/* Main Analytics Section - Total Sale Chart */}
-                <Card className="md:col-span-8 rounded-xl border-none shadow-sm">
-                    <CardHeader className="flex flex-row items-center justify-between pb-2">
-                        <div className="space-y-1">
-                            <CardTitle className="text-base font-normal text-slate-500">Total Sale</CardTitle>
-                            <div className="text-2xl font-bold">
-                                ₹ {stats.totalRevenue?.toLocaleString()}
-                            </div>
-                        </div>
-                        <Button variant="outline" size="sm" className="h-8 text-xs font-normal text-slate-500">
-                            This Month <ChevronDown className="ml-2 h-3 w-3" />
-                        </Button>
+            {/* New Middle Section: Operational Insights */}
+            <div className="grid gap-6 md:grid-cols-12">
+                <div className="md:col-span-8 space-y-6">
+                    <InventoryStats
+                        lowStockItems={inventoryStats.lowStockItems}
+                        topProducts={inventoryStats.topProducts}
+                    />
+                    <OperationsStats
+                        pendingQuotes={operationsStats.pendingQuotes}
+                        pendingPO={operationsStats.pendingPO}
+                    />
+                </div>
+                <div className="md:col-span-4 h-full">
+                    <CustomerStats topCustomers={customerStats.topCustomers} />
+                </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid gap-6 md:grid-cols-7">
+                <Card className="md:col-span-4 lg:col-span-5 rounded-xl border-none shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Sales Trend</CardTitle>
+                        <CardDescription>Revenue performance over time</CardDescription>
                     </CardHeader>
                     <CardContent className="pl-0">
-                        {/* Use existing chart data but with Line Chart in future. For now reusing Bar or creating new Line */}
-                        {/* I'll use a new SalesChart component which I will create next */}
                         <SalesChart data={overviewData} />
                     </CardContent>
                 </Card>
 
-                {/* Right Side Widgets */}
-                <div className="md:col-span-4 space-y-4">
+                <Card className="md:col-span-3 lg:col-span-2 rounded-xl border-none shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Category Pie</CardTitle>
+                        <CardDescription>Sales distribution</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <CategoryChart data={categoryData} />
+                    </CardContent>
+                </Card>
+            </div>
 
-                    {/* WhatsApp Connect */}
-                    <Card className="rounded-xl border-none shadow-sm">
-                        <CardContent className="p-4 flex flex-col items-center text-center space-y-3">
-                            <div className="bg-green-100 p-3 rounded-full">
-                                <MessageCircle className="h-6 w-6 text-green-600" />
+            {/* Bottom Row: Recent & Widgets */}
+            <div className="grid gap-6 md:grid-cols-12">
+                {/* Recent Transactions */}
+                <Card className="md:col-span-7 lg:col-span-8 rounded-xl border-none shadow-sm">
+                    <CardHeader>
+                        <CardTitle>Recent Transactions</CardTitle>
+                        <CardDescription>Latest 5 invoices created</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <RecentTransactions transactions={recentSales} />
+                    </CardContent>
+                </Card>
+
+                {/* Quick Widgets */}
+                <div className="md:col-span-5 lg:col-span-4 space-y-4">
+                    {/* WhatsApp */}
+                    <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white">
+                        <CardContent className="p-4 flex flex-col items-center text-center space-y-2">
+                            <div className="bg-green-100 p-2 rounded-full">
+                                <MessageCircle className="h-5 w-5 text-green-600" />
                             </div>
                             <div>
-                                <h3 className="font-semibold text-slate-800">WhatsApp Connect</h3>
-                                <p className="text-xs text-slate-500 mt-1">Send invoices directly on WhatsApp</p>
+                                <h3 className="font-semibold text-slate-800">WhatsApp Marketing</h3>
+                                <p className="text-xs text-slate-500">Send bulk offers & invoices</p>
                             </div>
-                            <div className="flex items-center gap-2 text-[10px] bg-slate-100 px-2 py-1 rounded">
-                                <span className="h-2 w-2 rounded-full bg-red-500"></span>
-                                <span className="text-slate-500 font-medium">LOGGED OUT</span>
-                            </div>
-                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white h-9 rounded-full text-xs" size="sm">
+                            <Button className="w-full bg-green-600 hover:bg-green-700 text-white h-8 rounded-full text-xs" size="sm">
                                 Connect WhatsApp
                             </Button>
                         </CardContent>
                     </Card>
 
-                    {/* Google Profile Manager */}
+                    {/* Quick Links with more items */}
                     <Card className="rounded-xl border-none shadow-sm">
-                        <CardContent className="p-4 flex flex-col items-center text-center space-y-3">
-                            <div className="bg-blue-100 p-3 rounded-full">
-                                <span className="text-xl font-bold text-blue-600">G</span>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm">Quick Access</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-2 gap-2">
+                            <Link href="/dashboard/reports/sales">
+                                <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-blue-50 hover:bg-blue-100 transition-colors cursor-pointer text-center h-full">
+                                    <BarChart3 className="h-5 w-5 text-blue-600 mb-1" />
+                                    <span className="text-[10px] font-medium text-slate-700">Sale Report</span>
+                                </div>
+                            </Link>
+                            <Link href="/dashboard/accounting/day-book">
+                                <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-purple-50 hover:bg-purple-100 transition-colors cursor-pointer text-center h-full">
+                                    <FileText className="h-5 w-5 text-purple-600 mb-1" />
+                                    <span className="text-[10px] font-medium text-slate-700">Daybook</span>
+                                </div>
+                            </Link>
+                            <Link href="/dashboard/parties">
+                                <div className="flex flex-col items-center justify-center p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-colors cursor-pointer text-center h-full">
+                                    <Users className="h-5 w-5 text-orange-600 mb-1" />
+                                    <span className="text-[10px] font-medium text-slate-700">Parties</span>
+                                </div>
+                            </Link>
+                            <div className="flex flex-col items-center justify-center p-3 rounded-lg border-2 border-dashed border-slate-200 hover:border-slate-300 transition-colors cursor-pointer text-center h-full text-slate-400 hover:text-slate-600">
+                                <Plus className="h-5 w-5 mb-1" />
+                                <span className="text-[10px] font-medium">More</span>
                             </div>
-                            <div>
-                                <h3 className="font-semibold text-slate-800">Google Profile</h3>
-                                <p className="text-xs text-slate-500 mt-1">Manage your business on Google</p>
-                            </div>
-                            <Button disabled className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 h-9 rounded-full text-xs" size="sm">
-                                Connect Now
-                            </Button>
-                        </CardContent>
-                    </Card>
-
-                </div>
-            </div>
-
-            {/* Bottom Section: Reports & Add Widget */}
-            <div>
-                <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-slate-700">Most Used Reports</h3>
-                    <Link href="/dashboard/reports" className="text-xs text-blue-600 font-medium hover:underline">
-                        View All
-                    </Link>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                    {/* Report Cards */}
-                    <Link href="/dashboard/reports/sales">
-                        <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                                    <BarChart3 className="h-5 w-5" />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700">Sale Report</span>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    <Link href="/dashboard/accounting/day-book">
-                        <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
-                                    <FileText className="h-5 w-5" />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700">Daybook</span>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    <Link href="/dashboard/reports/transactions">
-                        <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                                <div className="p-2 bg-orange-50 rounded-lg text-orange-600">
-                                    <RefreshCw className="h-5 w-5" />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700">All Transactions</span>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    <Link href="/dashboard/reports/party">
-                        <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow cursor-pointer h-full">
-                            <CardContent className="p-4 flex flex-col items-center text-center gap-2">
-                                <div className="p-2 bg-teal-50 rounded-lg text-teal-600">
-                                    <FileText className="h-5 w-5" />
-                                </div>
-                                <span className="text-xs font-semibold text-slate-700">Party Statement</span>
-                            </CardContent>
-                        </Card>
-                    </Link>
-
-                    {/* Add Widget Placeholder */}
-                    <Card className="rounded-xl border-2 border-dashed border-slate-200 shadow-none hover:border-blue-400 bg-transparent cursor-pointer h-full group">
-                        <CardContent className="p-4 flex flex-col items-center text-center gap-2 justify-center h-full">
-                            <div className="p-1 bg-slate-100 rounded-full text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-500">
-                                <Plus className="h-5 w-5" />
-                            </div>
-                            <span className="text-xs font-medium text-slate-400 group-hover:text-blue-500">Add Widget</span>
                         </CardContent>
                     </Card>
                 </div>

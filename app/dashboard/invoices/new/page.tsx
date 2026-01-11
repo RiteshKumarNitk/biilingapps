@@ -2,7 +2,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { format } from 'date-fns'
 import { Calendar as CalendarIcon, Save, Share2, Settings, Plus, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -18,12 +18,23 @@ import { TransactionItem, STATES } from '@/components/transactions/shared'
 import { getProducts } from '@/actions/inventory'
 import { getParties, createParty, getParty } from '@/actions/parties'
 import { createInvoice, getLastInvoiceNumber } from '@/actions/invoices'
+import { getQuotation } from '@/actions/quotations'
+import { getSaleOrder } from '@/actions/sale-orders'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { ModernLoader, FullPageLoader } from '@/components/ui/modern-loader'
 
 export default function AddSalePage() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+
+    // Check for sources
+    const fromEstimateId = searchParams.get('from_estimate')
+    const fromProformaId = searchParams.get('from_proforma')
+    const fromSaleOrderId = searchParams.get('from_sale_order')
+    // We treat proforma & estimate effectively the same way since they are both from 'quotations' table
+    const quotationId = fromEstimateId || fromProformaId || undefined
+
     const [loading, setLoading] = useState(false)
     const [initialLoading, setInitialLoading] = useState(true)
 
@@ -32,7 +43,7 @@ export default function AddSalePage() {
     const [parties, setParties] = useState<any[]>([])
 
     // Form State
-    const [transactionType, setTransactionType] = useState<'credit' | 'cash'>('credit')
+    const [transactionType, setTransactionType] = useState<'credit' | 'cash'>('credit') // Default will change if source data implies
     const [invoiceNumber, setInvoiceNumber] = useState(`INV-${Math.floor(Math.random() * 10000)}`) // Mock autogen
     const [invoiceDate, setInvoiceDate] = useState<Date>(new Date())
     const [stateOfSupply, setStateOfSupply] = useState('Karnataka') // Default
@@ -54,7 +65,7 @@ export default function AddSalePage() {
             quantity: 1,
             unit: 'PCS',
             price: 0,
-            taxType: 'exclusive',
+            taxType: 'inclusive',
             discountValue: 0,
             discountType: 'percentage',
             gstRate: 0,
@@ -67,18 +78,21 @@ export default function AddSalePage() {
     const [paymentType, setPaymentType] = useState('cash')
     const [roundOff, setRoundOff] = useState(0)
     const [paidAmount, setPaidAmount] = useState(0)
+    const [isFullPayment, setIsFullPayment] = useState(false) // Default to false or maybe true logic in effect
+    const [notes, setNotes] = useState('') // Private Note
 
     // Derived Totals
     const totalQuantity = items.reduce((acc, item) => acc + (item.quantity || 0), 0)
-    // Note: To get precise total Tax and Discount, we sum from rows
-    // Row Amount is (Taxable + Tax) usually.
-    // Let's recalculate accurately
-    const totalTax = items.reduce((acc, item) => acc + (item.taxAmount || 0), 0)
-    const subTotal = items.reduce((acc, item) => acc + (item.amount - item.taxAmount), 0) // Roughly
-
     const itemsTotal = items.reduce((acc, item) => acc + (item.amount || 0), 0)
     const grandTotal = Math.round((itemsTotal + roundOff) * 100) / 100
     const balanceDue = Math.max(0, grandTotal - paidAmount)
+
+    // Sync full payment
+    useEffect(() => {
+        if (isFullPayment) {
+            setPaidAmount(grandTotal)
+        }
+    }, [grandTotal, isFullPayment])
 
     // Load Data
     useEffect(() => {
@@ -94,14 +108,107 @@ export default function AddSalePage() {
                 if (nextInv) {
                     setInvoiceNumber(nextInv)
                 }
+
+                // If coming from Quotation
+                if (quotationId) {
+                    try {
+                        const { quotation, items: qItems, tenant } = await getQuotation(quotationId)
+                        if (quotation) {
+                            // Populate party info? 
+                            // We need full party object to be clean, but for now we trust ID if in list
+                            if (quotation.party_id) {
+                                // Find party in list to get balance etc
+                                const p = partyData?.find(pd => pd.id === quotation.party_id)
+                                if (p) {
+                                    setSelectedPartyId(p.id)
+                                    setBillingName(p.name)
+                                    setPhoneNumber(p.phone || '')
+                                    setBillingAddress(p.address || '')
+                                    // shipping
+                                    setSelectedPartyBalance(p.current_balance || 0)
+                                } else {
+                                    // Party loaded explicitly if needed, but assuming list covers active ones
+                                    setSelectedPartyId(quotation.party_id)
+                                    setBillingName(quotation.party_name || '')
+                                }
+                            }
+
+                            // Items
+                            if (qItems && qItems.length > 0) {
+                                const newItems: TransactionItem[] = qItems.map((qi: any, idx: number) => ({
+                                    rowId: idx.toString(),
+                                    productId: qi.product_id,
+                                    description: qi.description,
+                                    quantity: qi.quantity,
+                                    unit: 'PCS',
+                                    price: qi.unit_price,
+                                    taxType: 'exclusive',
+                                    discountValue: 0,
+                                    discountType: 'percentage',
+                                    gstRate: qi.gst_rate || 0,
+                                    taxAmount: qi.tax_amount || 0,
+                                    amount: qi.total_amount
+                                }))
+                                setItems(newItems)
+
+                                // Set notes if any
+                                if (quotation.notes) setNotes(quotation.notes)
+                            }
+                        }
+                    } catch (err) {
+                        toast.error("Failed to load source quotation")
+                    }
+                }
+                // If coming from Sale Order
+                else if (fromSaleOrderId) {
+                    try {
+                        const { order, items: oItems } = await getSaleOrder(fromSaleOrderId)
+                        if (order) {
+                            if (order.party_id) {
+                                const p = partyData?.find(pd => pd.id === order.party_id)
+                                if (p) {
+                                    setSelectedPartyId(p.id)
+                                    setBillingName(p.name)
+                                    setPhoneNumber(p.phone || '')
+                                    setBillingAddress(p.address || '')
+                                    setSelectedPartyBalance(p.current_balance || 0)
+                                } else {
+                                    setSelectedPartyId(order.party_id)
+                                    setBillingName(order.party_name || '')
+                                }
+                            }
+
+                            if (oItems && oItems.length > 0) {
+                                const newItems: TransactionItem[] = oItems.map((oi: any, idx: number) => ({
+                                    rowId: idx.toString(),
+                                    productId: oi.product_id,
+                                    description: oi.description,
+                                    quantity: oi.quantity,
+                                    unit: 'PCS',
+                                    price: oi.unit_price,
+                                    taxType: 'exclusive',
+                                    discountValue: 0,
+                                    discountType: 'percentage',
+                                    gstRate: oi.gst_rate || 0,
+                                    taxAmount: oi.tax_amount || 0,
+                                    amount: oi.total_amount
+                                }))
+                                setItems(newItems)
+                            }
+                        }
+                    } catch (err) {
+                        toast.error("Failed to load source sale order")
+                    }
+                }
+
             } catch (e) {
-                toast.error("Failed to load data")
+                toast.error("Failed to load initial data")
             } finally {
                 setInitialLoading(false)
             }
         }
         load()
-    }, [])
+    }, [quotationId, fromSaleOrderId])
 
     // Handle Party Selection
     const handlePartySelect = async (id: string) => {
@@ -147,10 +254,14 @@ export default function AddSalePage() {
                 invoice_number: invoiceNumber,
                 party_id: selectedPartyId, // Include Party ID
                 party_name: billingName || "Cash Sale", // Or Party Name
+                party_address: billingAddress,
+                shipping_address: shippingAddress,
+                party_phone: phoneNumber,
                 date: invoiceDate,
                 status: 'generated',
                 payment_status: balanceDue <= 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'unpaid'),
-                received_amount: paidAmount, // Pass the actual received amount
+                received_amount: paidAmount,
+                notes: notes,
                 items: items.map(item => {
                     // 1. Calculate Discount Amount
                     const baseAmount = (item.quantity || 0) * (item.price || 0)
@@ -165,16 +276,19 @@ export default function AddSalePage() {
                     let finalUnitPrice = item.price
                     let finalDiscount = discountAmt
                     let finalTaxAmount = item.taxAmount
+                    let finalAmount = item.amount
 
                     // Note: item.taxAmount is already calculated correctly by the table logic
                     // We just need to adjust unit_price and discount to be ex-tax for consistent DB storage
                     if (item.taxType === 'inclusive') {
+                        // Logic: Inclusive Price = Unit Price * (1 + GST)
                         const gstFactor = 1 + ((item.gstRate || 0) / 100)
+
+                        // We store unit_price as EXCLUSIVE in DB usually (practice varies, but let's assume exclusive)
                         finalUnitPrice = item.price / gstFactor
                         finalDiscount = discountAmt / gstFactor
 
-                        // In inclusive mode, the table calculated taxAmount based on the (Price - Disc).
-                        // We trust item.taxAmount from the table.
+                        // Recalculate tax if strict precision needed, but using table value is safer for "what you see is what you get"
                     }
 
                     return {
@@ -186,12 +300,30 @@ export default function AddSalePage() {
                         gst_rate: item.gstRate,
                         discount: finalDiscount,
                         tax_amount: finalTaxAmount,
-                        total_amount: item.amount
+                        total_amount: finalAmount
                     }
                 })
             }
 
+            // Important: Mark Source as "converted" if applicable? 
+            // The actions createInvoice doesn't do this automatically.
+            // We should do it here separately OR update createInvoice action to accept 'source_id' and 'source_type'.
+            // For now, let's keep it simple as user asked for "fill details".
+            // Automatic status update on source is handled by the "Convert" buttons in backend usually (direct conversion).
+            // But if they use this form flow, the source IS NOT getting updated. 
+            // This is a known gap. To fix "Convert To Invoice" flows correctly it should ideally happen purely backend OR call a specific "convert" action.
+            // However, filling this form gives them chance to edit.
+            // We ideally need to pass `from_estimate` ID to the backend createInvoice to link them?
+            // createInvoice action doesn't support it yet.
+
             await createInvoice(payload)
+
+            // Should we update the quotation status manually here?
+            // If we have quotationId, we probably should mark it converted?
+            // That's risky if the user cancels or partial conversion. 
+            // Usually "Convert to Invoice" implies full conversion.
+            // Let's stick to saving invoice first.
+
             toast.success("Sale Saved Successfully!")
             router.push('/dashboard/invoices')
 
@@ -211,7 +343,9 @@ export default function AddSalePage() {
             {/* 1. TOP HEADER */}
             <header className="bg-white border-b px-4 py-2 flex items-center justify-between shadow-sm z-20">
                 <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-bold text-slate-800">Sale</h1>
+                    <h1 className="text-xl font-bold text-slate-800">
+                        {quotationId ? 'Convert from Estimate' : (fromSaleOrderId ? 'Convert from Order' : 'Sale')}
+                    </h1>
                     <div className="flex items-center bg-slate-100 rounded-full p-1 border">
                         <button
                             onClick={() => setTransactionType('credit')}
@@ -266,7 +400,7 @@ export default function AddSalePage() {
                 </div>
             </header>
 
-            <div className="flex-1 overflow-auto p-4 space-y-4">
+            <div className="flex-1 overflow-auto mt-2 space-y-4">
                 {/* 2. CUSTOMER DETAILS */}
                 <Card className="p-4 border shadow-sm rounded-lg bg-white">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -274,7 +408,13 @@ export default function AddSalePage() {
                         <div className="space-y-3">
                             <div className="flex items-center justify-between">
                                 <label className="text-sm font-semibold text-slate-700">Bill To</label>
-                                <Button variant="link" className="h-auto p-0 text-blue-600 text-xs">+ Add Party</Button>
+                                <Button
+                                    variant="link"
+                                    className="h-auto p-0 text-blue-600 text-xs"
+                                    onClick={() => router.push('/dashboard/parties/create')}
+                                >
+                                    + Add Party
+                                </Button>
                             </div>
 
                             <div className="relative">
@@ -347,7 +487,15 @@ export default function AddSalePage() {
                 <div className="grid grid-cols-1 md:grid-cols-12 gap-4 pb-20">
                     <div className="md:col-span-6 space-y-4">
                         {/* Notes / T&C */}
-                        <Textarea placeholder="Private Note" className="h-20 text-xs bg-white" />
+                        <Card className="p-4 border shadow-sm rounded-lg bg-white h-full">
+                            <label className="text-sm font-semibold text-slate-700 block mb-2">Notes / Terms</label>
+                            <Textarea
+                                placeholder="Add private notes or specific terms for this invoice..."
+                                className="min-h-[120px] text-sm bg-slate-50 resize-y border-slate-200 focus:bg-white transition-colors"
+                                value={notes}
+                                onChange={(e) => setNotes(e.target.value)}
+                            />
+                        </Card>
                     </div>
 
                     <div className="md:col-span-6 bg-white rounded-lg border shadow-sm p-4 space-y-3">
@@ -374,33 +522,59 @@ export default function AddSalePage() {
                         </div>
 
                         {/* Payment Section */}
-                        <div className="bg-slate-50 p-3 rounded border space-y-3 mt-4">
+                        {/* Payment Section - Modernized */}
+                        <div className="bg-slate-50 p-4 rounded-lg border space-y-4">
                             <div className="flex items-center justify-between">
-                                <label className="text-xs font-semibold uppercase text-slate-500">Received</label>
+                                <label className="text-xs font-bold uppercase text-slate-500 tracking-wider">Received</label>
                                 <div className="flex items-center gap-2">
-                                    <Select value={paymentType} onValueChange={setPaymentType}>
-                                        <SelectTrigger className="h-7 w-24 text-xs bg-white">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="cash">Cash</SelectItem>
-                                            <SelectItem value="bank">Bank</SelectItem>
-                                            <SelectItem value="upi">UPI</SelectItem>
-                                        </SelectContent>
-                                    </Select>
+                                    <Switch
+                                        id="full-pay"
+                                        checked={isFullPayment}
+                                        onCheckedChange={(c) => {
+                                            setIsFullPayment(c)
+                                            if (c) setPaidAmount(grandTotal)
+                                        }}
+                                    />
+                                    <label htmlFor="full-pay" className="text-xs font-semibold text-slate-600 cursor-pointer">
+                                        Received Full {transactionType === 'cash' ? '(Cash)' : ''}
+                                    </label>
                                 </div>
                             </div>
-                            <div className="flex justify-between items-center gap-4">
-                                <Input
-                                    type="number"
-                                    value={paidAmount}
-                                    onChange={e => setPaidAmount(parseFloat(e.target.value))}
-                                    className="h-10 text-right font-bold text-green-600"
-                                />
+
+                            <div className="flex gap-3">
+                                <Select value={paymentType} onValueChange={setPaymentType}>
+                                    <SelectTrigger className="h-10 w-28 bg-white text-xs">
+                                        <SelectValue />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="cash">Cash</SelectItem>
+                                        <SelectItem value="bank">Bank</SelectItem>
+                                        <SelectItem value="upi">UPI</SelectItem>
+                                        <SelectItem value="cheque">Cheque</SelectItem>
+                                    </SelectContent>
+                                </Select>
+
+                                <div className="relative flex-1">
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold">₹</span>
+                                    <Input
+                                        type="number"
+                                        value={paidAmount}
+                                        onChange={e => {
+                                            setPaidAmount(parseFloat(e.target.value) || 0)
+                                            if (isFullPayment) setIsFullPayment(false) // Uncheck if manually edited
+                                        }}
+                                        className={cn(
+                                            "h-10 pl-8 text-right font-bold text-lg",
+                                            paidAmount > 0 ? "text-green-600 border-green-200 focus-visible:ring-green-500" : "text-slate-600"
+                                        )}
+                                        placeholder="0.00"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex justify-between text-xs pt-1">
-                                <span className="text-slate-500">Balance Due</span>
-                                <span className={cn("font-bold", balanceDue > 0 ? "text-red-500" : "text-green-500")}>
+
+                            <div className="flex justify-between items-center pt-2 border-t border-slate-200">
+                                <span className="text-xs text-slate-500 font-medium">Balance Due</span>
+                                <span className={cn("text-lg font-bold", balanceDue > 0 ? "text-red-500" : "text-slate-400")}>
                                     ₹ {balanceDue.toFixed(2)}
                                 </span>
                             </div>

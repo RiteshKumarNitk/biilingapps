@@ -240,7 +240,7 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                         </div>
                     </div>
 
-                    {/* 2. Invoice Info (Two Columns) */}
+                    {/* 2. Invoice Info */}
                     <div className={cn("flex flex-col md:flex-row gap-0 mb-6", boxBorder)}>
                         {/* Left: Bill To */}
                         <div className={cn("flex-1 p-4 border-b md:border-b-0 md:border-r", currentTheme.colors.border)}>
@@ -252,6 +252,15 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                                 {invoice.party_gstin && <p>GSTIN: <span className="font-semibold">{invoice.party_gstin}</span></p>}
                             </div>
                         </div>
+
+                        {/* Middle: Ship To (Optional) */}
+                        {invoice.shipping_address && (
+                            <div className={cn("flex-1 p-4 border-b md:border-b-0 md:border-r", currentTheme.colors.border)}>
+                                <h3 className={cn("text-xs font-bold uppercase mb-3", currentTheme.colors.accent)}>Ship To</h3>
+                                <p className="font-bold text-base mb-1">{invoice.party_name}</p>
+                                <p className="text-sm text-slate-600 whitespace-pre-line mb-2">{invoice.shipping_address}</p>
+                            </div>
+                        )}
 
                         {/* Right: Invoice Details */}
                         <div className="flex-1 p-4 grid grid-cols-2 gap-y-3 gap-x-4">
@@ -362,12 +371,23 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                                 <p className="text-xs font-bold uppercase text-slate-500 mb-1">Amount in Words</p>
                                 <p className="italic font-medium text-slate-800 mb-6 bg-slate-50 p-2 rounded border border-slate-100">{amountInWords} RUPEES ONLY</p>
 
+                                {invoice.notes && (
+                                    <div className="mb-4">
+                                        <p className="text-xs font-bold uppercase text-slate-500 mb-1">Notes</p>
+                                        <p className="text-xs text-slate-600 whitespace-pre-line">{invoice.notes}</p>
+                                    </div>
+                                )}
+
                                 <p className="text-xs font-bold uppercase text-slate-500 mb-2">Terms & Conditions</p>
-                                <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1">
-                                    <li>Goods once sold will not be taken back.</li>
-                                    <li>Interest @ 18% p.a. will be charged if payment is not made within the due date.</li>
-                                    <li>Subject to local jurisdiction only.</li>
-                                </ol>
+                                {tenant.settings?.terms ? (
+                                    <p className="text-xs text-slate-600 whitespace-pre-line">{tenant.settings.terms}</p>
+                                ) : (
+                                    <ol className="list-decimal list-inside text-xs text-slate-600 space-y-1">
+                                        <li>Goods once sold will not be taken back.</li>
+                                        <li>Interest @ 18% p.a. will be charged if payment is not made within the due date.</li>
+                                        <li>Subject to local jurisdiction only.</li>
+                                    </ol>
+                                )}
                             </div>
 
                             <div className="text-center min-w-[200px]">

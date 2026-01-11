@@ -1,55 +1,67 @@
 "use client"
 
-import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
+import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid } from "recharts"
 
 interface SalesChartProps {
     data: any[]
 }
 
 export function SalesChart({ data }: SalesChartProps) {
-    // If no real data, use a fallback to show the design
     const chartData = data && data.length > 0 ? data : [
-        { name: "1", total: 1200 },
-        { name: "5", total: 2400 },
-        { name: "10", total: 1800 },
-        { name: "15", total: 3200 },
-        { name: "20", total: 2800 },
-        { name: "25", total: 4500 },
-        { name: "30", total: 3800 },
+        { name: "Jan", total: 1000 },
+        { name: "Feb", total: 2400 },
+        { name: "Mar", total: 1800 },
+        { name: "Apr", total: 3200 },
+        { name: "May", total: 2800 },
+        { name: "Jun", total: 4500 },
+        { name: "Jul", total: 3800 },
     ]
 
     return (
         <ResponsiveContainer width="100%" height={350}>
-            <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+            <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <defs>
+                    <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#2563EB" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#2563EB" stopOpacity={0} />
+                    </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
                 <XAxis
                     dataKey="name"
-                    stroke="#888888"
+                    stroke="#9CA3AF"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    padding={{ left: 10, right: 10 }}
+                    tick={{ dy: 10 }}
                 />
                 <YAxis
-                    stroke="#888888"
+                    stroke="#9CA3AF"
                     fontSize={12}
                     tickLine={false}
                     axisLine={false}
-                    tickFormatter={(value) => `₹${value}`}
+                    tickFormatter={(value) => `₹${value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value}`}
                 />
                 <Tooltip
-                    contentStyle={{ borderRadius: "8px", border: "none", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
-                    formatter={(value: number) => [`₹${value}`, "Sale"]}
+                    contentStyle={{
+                        backgroundColor: '#fff',
+                        borderRadius: "8px",
+                        border: "1px solid #E5E7EB",
+                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)"
+                    }}
+                    itemStyle={{ color: '#111827', fontWeight: 600 }}
+                    formatter={(value: number) => [`₹${value.toLocaleString()}`, "Revenue"]}
+                    labelStyle={{ color: '#6B7280', marginBottom: '4px' }}
                 />
-                <Line
+                <Area
                     type="monotone"
                     dataKey="total"
                     stroke="#2563EB"
-                    strokeWidth={3}
-                    dot={{ r: 4, fill: "#2563EB", strokeWidth: 2, stroke: "#fff" }}
-                    activeDot={{ r: 6, strokeWidth: 0 }}
+                    strokeWidth={2}
+                    fillOpacity={1}
+                    fill="url(#colorTotal)"
                 />
-            </LineChart>
+            </AreaChart>
         </ResponsiveContainer>
     )
 }

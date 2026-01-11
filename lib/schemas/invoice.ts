@@ -16,6 +16,10 @@ export const invoiceItemSchema = z.object({
 export const invoiceSchema = z.object({
     party_id: z.string().optional(),
     party_name: z.string().min(1, 'Customer Name is required'),
+    party_address: z.string().optional(),
+    shipping_address: z.string().optional(),
+    party_phone: z.string().optional(),
+    party_email: z.string().optional(),
     invoice_number: z.string().min(1, 'Invoice Number is required'),
     date: z.date(),
     due_date: z.date().optional(),
@@ -23,6 +27,7 @@ export const invoiceSchema = z.object({
     status: z.enum(['draft', 'generated', 'paid', 'overdue', 'cancelled']),
     payment_status: z.enum(['unpaid', 'partial', 'paid']),
     received_amount: z.number().min(0).optional().default(0),
+    notes: z.string().optional(),
 })
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>

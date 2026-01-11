@@ -25,76 +25,136 @@ export default async function QuotationViewPage({
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">
             <div className="flex items-center justify-between">
-                <h2 className="text-3xl font-bold tracking-tight">Quotation Details</h2>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Quotation Details</h2>
+                    <p className="text-sm text-muted-foreground mt-1">View and manage this quotation</p>
+                </div>
                 <div className="flex space-x-2">
                     <ConvertButton quotationId={q.id} status={q.status} />
                 </div>
             </div>
 
-            <Card>
-                <CardHeader>
-                    <div className="flex justify-between">
+            <Card className="rounded-xl overflow-hidden shadow-sm border-slate-200">
+                <CardHeader className="bg-slate-50 border-b border-slate-100 p-6">
+                    <div className="flex flex-col md:flex-row justify-between gap-6">
                         <div>
-                            <CardTitle className="text-xl">{tenant.name}</CardTitle>
-                            <p className="text-sm text-muted-foreground">{tenant.address}</p>
-                            <p className="text-sm text-muted-foreground">{tenant.phone}</p>
+                            <h3 className="font-bold text-lg text-slate-800 uppercase tracking-wider mb-2">{tenant.name}</h3>
+                            <div className="text-sm text-slate-500 space-y-1">
+                                <p className="whitespace-pre-line">{tenant.address}</p>
+                                <p>Phone: {tenant.phone}</p>
+                                {tenant.gstin && <p>GSTIN: {tenant.gstin}</p>}
+                                {tenant.email && <p>Email: {tenant.email}</p>}
+                            </div>
                         </div>
                         <div className="text-right">
-                            <h3 className="text-lg font-bold">QUOTATION</h3>
-                            <p className="font-mono">{q.quotation_number}</p>
-                            <p className="text-sm text-muted-foreground">Date: {format(new Date(q.date), 'dd MMM yyyy')}</p>
-                            <Badge className="mt-2">{q.status.toUpperCase()}</Badge>
+                            <h3 className="text-2xl font-bold text-slate-800 mb-1">QUOTATION</h3>
+                            <p className="font-mono text-slate-600 font-medium"># {q.quotation_number}</p>
+                            <div className="mt-4 space-y-1 text-sm">
+                                <div className="flex justify-end gap-4">
+                                    <span className="text-slate-500">Date:</span>
+                                    <span className="font-medium text-slate-700">{format(new Date(q.date), 'dd MMM yyyy')}</span>
+                                </div>
+                                {q.valid_until && (
+                                    <div className="flex justify-end gap-4">
+                                        <span className="text-slate-500">Valid Until:</span>
+                                        <span className="font-medium text-slate-700">{format(new Date(q.valid_until), 'dd MMM yyyy')}</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-end gap-4 mt-2">
+                                    <Badge className={`${q.status === 'converted' ? 'bg-green-100 text-green-700 hover:bg-green-100' : 'bg-blue-100 text-blue-700 hover:bg-blue-100'} border-none uppercase text-xs px-2`}>
+                                        {q.status}
+                                    </Badge>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </CardHeader>
-                <CardContent>
-                    <div className="mb-6">
-                        <h4 className="text-sm font-semibold mb-2">Bill To:</h4>
-                        <div className="text-sm border p-3 rounded">
-                            <p className="font-medium">{q.party_name}</p>
+                <CardContent className="p-0">
+                    <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <h4 className="text-xs font-semibold uppercase text-slate-400 mb-3">Bill To</h4>
+                            <div className="text-sm">
+                                <p className="font-bold text-slate-800 text-base mb-1">{q.party_name}</p>
+                                {q.party_address && <p className="text-slate-500 whitespace-pre-line">{q.party_address}</p>}
+                                {q.party_phone && <p className="text-slate-500 mt-1">Phone: {q.party_phone}</p>}
+                                {q.party_email && <p className="text-slate-500">Email: {q.party_email}</p>}
+                            </div>
                         </div>
+                        {q.shipping_address && (
+                            <div>
+                                <h4 className="text-xs font-semibold uppercase text-slate-400 mb-3">Ship To</h4>
+                                <div className="text-sm">
+                                    <p className="font-bold text-slate-800 text-base mb-1">{q.party_name}</p>
+                                    <p className="text-slate-500 whitespace-pre-line">{q.shipping_address}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Description</TableHead>
-                                <TableHead className="text-right">Qty</TableHead>
-                                <TableHead className="text-right">Price</TableHead>
-                                <TableHead className="text-right">Total</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {items?.map((item) => (
-                                <TableRow key={item.id}>
-                                    <TableCell>{item.description}</TableCell>
-                                    <TableCell className="text-right">{item.quantity}</TableCell>
-                                    <TableCell className="text-right">₹{item.unit_price}</TableCell>
-                                    <TableCell className="text-right">₹{item.total_amount}</TableCell>
+                    <div className="border-t border-slate-100 px-6 py-2">
+                        <Table>
+                            <TableHeader>
+                                <TableRow className="border-none hover:bg-transparent">
+                                    <TableHead className="pl-0 text-slate-500 font-semibold w-[40%]">Item Description</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold">Qty</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold">Rate</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold">GST</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold">Tax</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold text-xs text-red-400">Disc</TableHead>
+                                    <TableHead className="text-right text-slate-500 font-semibold pr-0">Amount</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {items?.map((item) => (
+                                    <TableRow key={item.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                                        <TableCell className="pl-0 py-4 align-top">
+                                            <p className="font-medium text-slate-700 text-sm">{item.description}</p>
+                                        </TableCell>
+                                        <TableCell className="text-right py-4 align-top text-slate-600">{item.quantity}</TableCell>
+                                        <TableCell className="text-right py-4 align-top text-slate-600">₹{item.unit_price}</TableCell>
+                                        <TableCell className="text-right py-4 align-top text-slate-600">{item.gst_rate}%</TableCell>
+                                        <TableCell className="text-right py-4 align-top text-slate-600">₹{item.tax_amount?.toFixed(2)}</TableCell>
+                                        <TableCell className="text-right py-4 align-top text-red-500">
+                                            {item.discount > 0 ? `-₹${item.discount}` : '-'}
+                                        </TableCell>
+                                        <TableCell className="text-right pr-0 py-4 align-top font-bold text-slate-800">₹{item.total_amount?.toFixed(2)}</TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
 
-                    <div className="flex justify-end mt-6">
-                        <div className="w-1/3 text-right space-y-2">
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Subtotal:</span>
-                                <span>₹{q.subtotal}</span>
+                    <div className="bg-slate-50/50 p-6 flex flex-col items-end">
+                        <div className="w-full md:w-1/3 space-y-3">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Subtotal</span>
+                                <span className="font-medium text-slate-700">₹{q.subtotal?.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-muted-foreground">Total GST:</span>
-                                <span>₹{q.total_gst}</span>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-slate-500">Total GST</span>
+                                <span className="font-medium text-slate-700">₹{q.total_gst?.toFixed(2)}</span>
                             </div>
-                            <Separator />
-                            <div className="flex justify-between font-bold text-lg">
-                                <span>Total:</span>
-                                <span>₹{q.grand_total}</span>
+                            {q.discount_amount > 0 && (
+                                <div className="flex justify-between text-sm text-red-600">
+                                    <span>Total Discount</span>
+                                    <span className="font-medium">-₹{q.discount_amount?.toFixed(2)}</span>
+                                </div>
+                            )}
+                            <Separator className="my-2" />
+                            <div className="flex justify-between text-lg">
+                                <span className="font-bold text-slate-800">Grand Total</span>
+                                <span className="font-bold text-blue-600">₹{q.grand_total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                             </div>
                         </div>
                     </div>
                 </CardContent>
+                {q.notes && (
+                    <div className="border-t border-slate-100 p-6 bg-slate-50/30">
+                        <h4 className="text-xs font-semibold uppercase text-slate-500 mb-2">Terms & Conditions / Notes</h4>
+                        <p className="text-sm text-slate-600 whitespace-pre-line">{q.notes}</p>
+                    </div>
+                )}
             </Card>
-        </div>
+        </div >
     )
 }
