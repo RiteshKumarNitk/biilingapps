@@ -62,8 +62,9 @@ export const columns: ColumnDef<PurchaseBill>[] = [
                     <Link href={`/dashboard/purchase/bills/${bill.id}`} title="View Details">
                         <Eye className="h-4 w-4 hover:text-blue-600 cursor-pointer text-slate-400" />
                     </Link>
-                    {/* Placeholder for Print/Share */}
-                    <Printer className="h-4 w-4 hover:text-slate-600 cursor-pointer" />
+                    <Link href={`/print/purchase/${bill.id}`} target="_blank" title="Print Bill">
+                        <Printer className="h-4 w-4 hover:text-slate-600 cursor-pointer text-slate-400" />
+                    </Link>
                     <Share2 className="h-4 w-4 hover:text-slate-600 cursor-pointer" />
 
                     <DeletePurchaseButton id={bill.id} />

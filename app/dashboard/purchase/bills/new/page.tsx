@@ -16,7 +16,7 @@ import { TransactionTable } from '@/components/transactions/transaction-table'
 import { TransactionItem, STATES } from '@/components/transactions/shared'
 import { getProducts } from '@/actions/inventory'
 import { getParties } from '@/actions/parties'
-import { createPurchaseBill } from '@/actions/purchase'
+import { createPurchaseBill, getLastPurchaseBillNumber } from '@/actions/purchase'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { ModernLoader, FullPageLoader } from '@/components/ui/modern-loader'
@@ -59,12 +59,14 @@ export default function AddPurchasePage() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [pData, partyData] = await Promise.all([
+                const [pData, partyData, nextBill] = await Promise.all([
                     getProducts(1, 1000),
-                    getParties('supplier') // Fetch suppliers
+                    getParties('supplier'), // Fetch suppliers
+                    getLastPurchaseBillNumber()
                 ])
                 setProducts(pData.data || [])
                 setParties(partyData || [])
+                if (nextBill) setBillNumber(nextBill)
             } catch (e) {
                 toast.error("Failed to load data")
             } finally {
@@ -107,8 +109,13 @@ export default function AddPurchasePage() {
                     product_id: item.productId,
                     description: item.description,
                     quantity: item.quantity,
+                    unit: item.unit,
                     unit_price: item.price,
-                    total_amount: item.amount
+                    gst_rate: item.gstRate,
+                    tax_amount: item.taxAmount,
+                    discount: item.discountValue, // Assuming it's the absolute value, but let's check shared.ts
+                    total_amount: item.amount,
+                    hsn_code: products.find(p => p.id === item.productId)?.hsn_code
                 })),
                 payment_status: balancePayable <= 0 ? 'paid' : 'unpaid'
             })

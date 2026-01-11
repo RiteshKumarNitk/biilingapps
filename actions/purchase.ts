@@ -41,8 +41,13 @@ export async function createPurchaseBill(data: any) {
         product_id: item.product_id,
         description: item.description,
         quantity: item.quantity,
+        unit: item.unit,
         unit_price: item.unit_price,
+        gst_rate: item.gst_rate || 0,
+        tax_amount: item.tax_amount || 0,
+        discount: item.discount || 0,
         total_amount: item.total_amount,
+        hsn_code: item.hsn_code
     }))
 
     const { error: itemsError } = await supabase.from('po_items').insert(items)
@@ -90,7 +95,13 @@ export async function createPurchaseBill(data: any) {
 
 export async function getPurchaseStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
     const supabase = await createClient()
-    let query = supabase.from('purchase_orders').select('grand_total, status')
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { total: 0, count: 0 }
+
+    let query = supabase.from('purchase_orders')
+        .select('grand_total, status')
+        .eq('tenant_id', profile.tenant_id)
 
     if (filters?.search) query = query.ilike('party_name', `%${filters.search}%`)
     if (filters?.startDate) query = query.gte('date', filters.startDate.toISOString())
@@ -108,12 +119,17 @@ export async function getPurchaseStats(filters?: { search?: string; startDate?: 
 
 export async function getPurchaseBills(page = 1, pageSize = 10, filters?: { search?: string; startDate?: Date; endDate?: Date }) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { data: [], total: 0 }
+
     const start = (page - 1) * pageSize
     const end = start + pageSize - 1
 
     let query = supabase
         .from('purchase_orders')
         .select('*', { count: 'exact' })
+        .eq('tenant_id', profile.tenant_id)
         .range(start, end)
         .order('date', { ascending: false })
 
@@ -131,7 +147,7 @@ export async function getPurchaseBills(page = 1, pageSize = 10, filters?: { sear
 
     if (error) {
         console.error('Error fetching purchase bills:', error)
-        return { data: [], total: 0 }
+        throw new Error(error.message)
     }
 
     return { data, total: count || 0 }
@@ -198,4 +214,84 @@ export async function deletePurchaseBill(id: string) {
     revalidatePath('/dashboard/purchase/bills')
     revalidatePath('/dashboard/parties')
     return { success: true }
+}
+
+export async function getLastPurchaseBillNumber() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return null
+
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user.id).single()
+    if (!profile) return null
+
+    const { data: lastPO } = await supabase
+        .from('purchase_orders')
+        .select('po_number')
+        .eq('tenant_id', profile.tenant_id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+    if (lastPO && lastPO.po_number) {
+        // Try to parse number
+        const parts = lastPO.po_number.split('-')
+        if (parts.length > 1) {
+            const num = parseInt(parts[parts.length - 1])
+            if (!isNaN(num)) {
+                return `${parts[0]}-${String(num + 1).padStart(4, '0')}`
+            }
+        }
+    }
+
+    return 'BILL-0001'
+}
+
+export async function getPurchaseBillDetails(id: string) {
+    const supabase = await createClient()
+
+    // 1. Get PO with Party Details
+    const { data: bill, error: billError } = await supabase
+        .from('purchase_orders')
+        .select(`
+            *,
+            parties (
+                name,
+                address,
+                email,
+                phone,
+                gstin,
+                shipping_address,
+                city,
+                state,
+                pincode,
+                pan_number
+            )
+        `)
+        .eq('id', id)
+        .single()
+
+    if (billError) throw new Error(billError.message)
+
+    // 2. Get Items
+    const { data: items, error: itemsError } = await supabase
+        .from('po_items')
+        .select(`
+            *,
+            products (
+                name,
+                hsn_code
+            )
+        `)
+        .eq('po_id', id)
+
+    if (itemsError) throw new Error(itemsError.message)
+
+    // 3. Get Tenant
+    const { data: tenant } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('id', bill.tenant_id)
+        .single()
+
+    return { bill, items, tenant }
 }

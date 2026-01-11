@@ -23,6 +23,13 @@ export const partySchema = z.object({
 
     // Additional
     description: z.string().optional(),
+
+    // New Fields
+    city: z.string().optional(),
+    pincode: z.string().optional(),
+    pan_number: z.string().optional(),
+    bank_details: z.string().optional(),
+    terms: z.string().optional(),
 })
 
 export type PartyFormValues = z.infer<typeof partySchema>

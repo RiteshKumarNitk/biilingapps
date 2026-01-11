@@ -6,7 +6,14 @@ import { revalidatePath } from 'next/cache'
 
 export async function getParties(type?: 'customer' | 'supplier', search = '', _ts?: number) {
     const supabase = await createClient()
-    let query = supabase.from('parties').select('*').order('name')
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return []
+
+    let query = supabase.from('parties')
+        .select('*')
+        .eq('tenant_id', profile.tenant_id)
+        .order('name')
 
     if (type) query = query.eq('type', type)
     if (search) query = query.ilike('name', `%${search}%`)

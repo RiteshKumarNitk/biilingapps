@@ -27,14 +27,31 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                 <div className="flex justify-between gap-8">
                     <div>
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase">Billed To</h4>
-                        <p className="font-bold text-slate-900">{invoice.party_name}</p>
-                        {invoice.party_address && <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{invoice.party_address}</p>}
-                        {(invoice.party_phone || invoice.party_email) && (
-                            <div className="mt-2 text-xs text-slate-500 space-y-0.5">
-                                {invoice.party_phone && <p>Ph: {invoice.party_phone}</p>}
-                                {invoice.party_email && <p>Email: {invoice.party_email}</p>}
+                        <p className="font-bold text-slate-900 text-lg">{invoice.party_name}</p>
+                        <div className="text-sm text-slate-600 mt-1 space-y-0.5">
+                            {invoice.party_address && <p className="whitespace-pre-line">{invoice.party_address}</p>}
+                            {(invoice.parties?.city || invoice.parties?.state) && (
+                                <p>{invoice.parties.city}{invoice.parties.city && invoice.parties.state ? ', ' : ''}{invoice.parties.state} {invoice.parties.pincode}</p>
+                            )}
+
+                            <div className="pt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
+                                {(invoice.party_phone || invoice.parties?.phone) && <p><span className="font-medium">Ph:</span> {invoice.party_phone || invoice.parties?.phone}</p>}
+                                {(invoice.party_email || invoice.parties?.email) && <p><span className="font-medium">Email:</span> {invoice.party_email || invoice.parties?.email}</p>}
                             </div>
-                        )}
+
+                            <div className="pt-1 flex flex-wrap gap-2">
+                                {(invoice.gstin || invoice.parties?.gstin) && (
+                                    <span className="bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-medium">
+                                        GSTIN: {invoice.gstin || invoice.parties?.gstin}
+                                    </span>
+                                )}
+                                {invoice.parties?.pan_number && (
+                                    <span className="bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-medium">
+                                        PAN: {invoice.parties.pan_number}
+                                    </span>
+                                )}
+                            </div>
+                        </div>
                     </div>
                     {invoice.shipping_address && (
                         <div>
@@ -124,7 +141,9 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
 
                         <div>
                             <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Terms & Conditions</h4>
-                            {tenant.settings?.terms ? (
+                            {invoice.parties?.terms ? (
+                                <p className="text-sm text-slate-600 whitespace-pre-line bg-blue-50/50 p-3 rounded border border-blue-100">{invoice.parties.terms}</p>
+                            ) : tenant.settings?.terms ? (
                                 <p className="text-sm text-slate-600 whitespace-pre-line">{tenant.settings.terms}</p>
                             ) : (
                                 <ol className="list-decimal list-inside text-sm text-slate-600 space-y-1">

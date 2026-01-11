@@ -99,6 +99,13 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
             as_of_date: initialData?.as_of_date ? new Date(initialData.as_of_date) : new Date(),
             credit_limit: initialData?.credit_limit || 0,
             is_custom_credit_limit: (initialData?.credit_limit || 0) > 0,
+
+            // New Fields
+            city: initialData?.city || '',
+            pincode: initialData?.pincode || '',
+            pan_number: initialData?.pan_number || '',
+            bank_details: initialData?.bank_details || '',
+            terms: initialData?.terms || '',
         }
     })
 
@@ -277,13 +284,23 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
                                         </Select>
                                     </div>
 
-                                    <div className="space-y-3">
-                                        <Label className="text-slate-500 font-normal">Email ID</Label>
-                                        <Input
-                                            {...register('email')}
-                                            placeholder="Enter Email Address"
-                                            className="h-11 border-slate-200"
-                                        />
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-3">
+                                            <Label className="text-slate-500 font-normal">City</Label>
+                                            <Input
+                                                {...register('city')}
+                                                placeholder="City"
+                                                className="h-11 border-slate-200"
+                                            />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <Label className="text-slate-500 font-normal">Pincode</Label>
+                                            <Input
+                                                {...register('pincode')}
+                                                placeholder="Pincode"
+                                                className="h-11 border-slate-200"
+                                            />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -437,9 +454,51 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
 
                         {/* ADDITIONAL FIELDS TAB */}
                         <TabsContent value="additional" className="m-0 space-y-8 animate-in fade-in-50 duration-300">
-                            <div className="flex flex-col items-center justify-center py-12 text-center text-slate-400">
-                                <FileText className="h-12 w-12 mb-3 opacity-20" />
-                                <p className="text-sm">Additional custom fields can be configured here.</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-700 font-semibold">Email ID</Label>
+                                        <Input
+                                            {...register('email')}
+                                            placeholder="Enter Email Address"
+                                            className="h-11 border-slate-200"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-700 font-semibold">PAN Number</Label>
+                                        <Input
+                                            {...register('pan_number')}
+                                            placeholder="Enter PAN Number"
+                                            className="h-11 border-slate-200 uppercase"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-700 font-semibold">Bank Details</Label>
+                                        <Textarea
+                                            {...register('bank_details')}
+                                            placeholder="A/C No, IFSC, Bank Name..."
+                                            className="min-h-[100px] resize-none border-slate-200 focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-6">
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-700 font-semibold">Description / Notes</Label>
+                                        <Textarea
+                                            {...register('description')}
+                                            placeholder="General notes about this party..."
+                                            className="min-h-[100px] resize-none border-slate-200 focus:border-blue-500"
+                                        />
+                                    </div>
+                                    <div className="space-y-3">
+                                        <Label className="text-slate-700 font-semibold">Additional Terms</Label>
+                                        <Textarea
+                                            {...register('terms')}
+                                            placeholder="Specific terms for this party..."
+                                            className="min-h-[100px] resize-none border-slate-200 focus:border-blue-500"
+                                        />
+                                    </div>
+                                </div>
                             </div>
                         </TabsContent>
                     </div>

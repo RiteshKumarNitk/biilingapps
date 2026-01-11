@@ -20,10 +20,13 @@ export type SaleOrderItem = {
     product_id: string | null
     description: string
     quantity: number
+    unit?: string
     unit_price: number
+    discount?: number
     gst_rate: number
     tax_amount: number
     total_amount: number
+    hsn_code?: string
 }
 
 export type CreateSaleOrderData = {

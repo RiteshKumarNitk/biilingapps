@@ -1,14 +1,8 @@
 
 import { createClient } from '@/utils/supabase/server'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
+import Link from 'next/link'
+import { BarChart3, FileText, ShoppingCart, Users, Receipt } from 'lucide-react'
 
 export default async function ReportsPage() {
     const supabase = await createClient()
@@ -19,14 +13,21 @@ export default async function ReportsPage() {
 
     // Calculate Reports
     const totalSales = invoices?.reduce((acc, curr) => acc + curr.grand_total, 0) || 0
-    const paidSales = invoices?.filter(i => i.payment_status === 'paid').reduce((acc, curr) => acc + curr.grand_total, 0) || 0
-    const pendingSales = totalSales - paidSales
-    const stockValue = products?.reduce((acc: number, curr: any) => acc + (curr.stock * curr.price), 0) || 0
+    const pendingSales = totalSales - (invoices?.filter(i => i.payment_status === 'paid').reduce((acc, curr) => acc + curr.grand_total, 0) || 0)
+    const stockValue = products?.reduce((acc: number, curr: any) => acc + (curr.stock_quantity * curr.price), 0) || 0
+
+    const quickLinks = [
+        { title: 'Sales Report', href: '/dashboard/reports/sales', icon: Receipt, color: 'text-blue-600', bg: 'bg-blue-100/50' },
+        { title: 'Purchase Report', href: '/dashboard/reports/purchase', icon: ShoppingCart, color: 'text-orange-600', bg: 'bg-orange-100/50' },
+        { title: 'Stock Report', href: '/dashboard/reports/stock', icon: BarChart3, color: 'text-purple-600', bg: 'bg-purple-100/50' },
+        { title: 'Party Report', href: '/dashboard/reports/party', icon: Users, color: 'text-pink-600', bg: 'bg-pink-100/50' },
+        { title: 'GST Report', href: '/dashboard/reports/gst', icon: FileText, color: 'text-green-600', bg: 'bg-green-100/50' },
+    ]
 
     return (
-        <div className="flex-1 space-y-4 p-8 pt-6">
+        <div className="flex-1 space-y-8 p-8 pt-6">
             <div className="flex items-center justify-between space-y-2">
-                <h2 className="text-3xl font-bold tracking-tight">Reports</h2>
+                <h2 className="text-3xl font-bold tracking-tight">Reports Overview</h2>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -56,31 +57,23 @@ export default async function ReportsPage() {
                 </Card>
             </div>
 
-            {/* Could add graph or detailed tables here */}
-            <h3 className="text-lg font-medium mt-8 mb-4">Stock Report</h3>
-            <div className="border rounded-md">
-                <Table>
-                    <TableHeader>
-                        <TableRow>
-                            <TableHead>Product</TableHead>
-                            <TableHead className="text-right">Stock Qty</TableHead>
-                            <TableHead className="text-right">Unit Price</TableHead>
-                            <TableHead className="text-right">Total Value</TableHead>
-                        </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                        {products?.map((p) => (
-                            <TableRow key={p.id}>
-                                <TableCell>{p.name}</TableCell>
-                                <TableCell className="text-right">{p.stock}</TableCell>
-                                <TableCell className="text-right">₹{p.price}</TableCell>
-                                <TableCell className="text-right">₹{(p.stock * p.price).toFixed(2)}</TableCell>
-                            </TableRow>
-                        ))}
-                    </TableBody>
-                </Table>
+            <div>
+                <h3 className="text-lg font-medium mb-4">Detailed Reports</h3>
+                <div className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+                    {quickLinks.map((link) => (
+                        <Link key={link.title} href={link.href}>
+                            <Card className="hover:bg-slate-50 transition-colors cursor-pointer border-slate-200">
+                                <CardContent className="p-6 flex flex-col items-center justify-center gap-3 text-center h-full">
+                                    <div className={`p-3 rounded-full ${link.bg}`}>
+                                        <link.icon className={`h-6 w-6 ${link.color}`} />
+                                    </div>
+                                    <span className="font-medium text-slate-700">{link.title}</span>
+                                </CardContent>
+                            </Card>
+                        </Link>
+                    ))}
+                </div>
             </div>
-
         </div>
     )
 }

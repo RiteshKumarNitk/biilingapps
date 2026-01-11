@@ -7,11 +7,16 @@ import { revalidatePath } from 'next/cache'
 
 export async function getInvoiceStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { totalSales: 0, received: 0, balance: 0 }
 
     // Query for stats - We need to fetch all matching rows to aggregate
     // Ideally this should be an RPC or .csv aggregation for performance on huge data, 
     // but for <10k rows JS reduce is fine.
-    let query = supabase.from('invoices').select('grand_total, payment_status, date, party_name')
+    let query = supabase.from('invoices')
+        .select('grand_total, payment_status, date, party_name')
+        .eq('tenant_id', profile.tenant_id)
 
     if (filters?.search) query = query.ilike('party_name', `%${filters.search}%`)
     if (filters?.startDate) query = query.gte('date', filters.startDate.toISOString())
@@ -39,14 +44,19 @@ export async function getInvoiceStats(filters?: { search?: string; startDate?: D
 
 export async function getInvoices(page = 1, pageSize = 10, filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { data: [], count: 0 }
+
     const start = (page - 1) * pageSize
     const end = start + pageSize - 1
 
     let query = supabase
         .from('invoices')
         .select('*', { count: 'exact' })
+        .eq('tenant_id', profile.tenant_id)
         .range(start, end)
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
 
     if (filters?.search) {
         query = query.ilike('party_name', `%${filters.search}%`)
@@ -180,10 +190,13 @@ export async function createInvoice(data: InvoiceFormValues) {
 export async function getInvoiceDetails(id: string) {
     const supabase = await createClient()
 
-    // 1. Get Invoice
+    // 1. Get Invoice with Party Details
     const { data: invoice, error: invoiceError } = await supabase
         .from('invoices')
-        .select('*')
+        .select(`
+            *,
+            parties (*)
+        `)
         .eq('id', id)
         .single()
 

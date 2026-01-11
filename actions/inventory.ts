@@ -7,12 +7,17 @@ import { revalidatePath } from 'next/cache'
 
 export async function getProducts(page = 1, pageSize = 10, search = '') {
     const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { data: [], count: 0 }
+
     const start = (page - 1) * pageSize
     const end = start + pageSize - 1
 
     let query = supabase
         .from('products')
         .select('*', { count: 'exact' })
+        .eq('tenant_id', profile.tenant_id)
         .range(start, end)
         .order('created_at', { ascending: false })
 
@@ -80,7 +85,13 @@ export async function deleteProduct(id: string) {
 
 export async function getInventoryStats() {
     const supabase = await createClient()
-    const { data: products } = await supabase.from('products').select('stock_quantity, price, cost_price, type')
+    const { data: { user } } = await supabase.auth.getUser()
+    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
+    if (!profile) return { totalStockValue: 0, totalStockQty: 0 }
+
+    const { data: products } = await supabase.from('products')
+        .select('stock_quantity, price, cost_price, type')
+        .eq('tenant_id', profile.tenant_id)
 
     if (!products) return { totalStockValue: 0, totalStockQty: 0, lowStockCount: 0 }
 
