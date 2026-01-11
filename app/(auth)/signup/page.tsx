@@ -17,19 +17,20 @@ import {
     CardTitle,
 } from '@/components/ui/card'
 import { toast } from 'sonner'
+import { useLoading } from '@/components/providers/loading-provider'
 
 export default function SignupPage() {
     const [fullName, setFullName] = React.useState('')
     const [businessName, setBusinessName] = React.useState('')
     const [email, setEmail] = React.useState('')
     const [password, setPassword] = React.useState('')
-    const [loading, setLoading] = React.useState(false)
+    const { showLoader, hideLoader, isLoading } = useLoading()
     const router = useRouter()
     const supabase = createClient()
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
+        showLoader()
 
         // Sign up with extra metadata for the trigger to handle
         const { error } = await supabase.auth.signUp({
@@ -45,7 +46,7 @@ export default function SignupPage() {
 
         if (error) {
             toast.error(error.message)
-            setLoading(false)
+            hideLoader()
         } else {
             // If email confirmation is enabled, we should show a message. 
             // For simplicity assuming auto-confirm or user awareness.
@@ -107,8 +108,8 @@ export default function SignupPage() {
                             />
                         </div>
                     </div>
-                    <Button className="w-full mt-6" type="submit" disabled={loading}>
-                        {loading ? 'Creating Account...' : 'Sign Up'}
+                    <Button className="w-full mt-6" type="submit" disabled={isLoading}>
+                        {isLoading ? 'Creating Account...' : 'Sign Up'}
                     </Button>
                 </form>
             </CardContent>

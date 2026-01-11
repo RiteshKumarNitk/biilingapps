@@ -18,16 +18,18 @@ import {
 } from '@/components/ui/card'
 import { toast } from 'sonner'
 
+import { useLoading } from '@/components/providers/loading-provider'
+
 export default function LoginPage() {
     const [email, setEmail] = React.useState('')
     const [password, setPassword] = React.useState('')
-    const [loading, setLoading] = React.useState(false)
+    const { showLoader, hideLoader, isLoading } = useLoading()
     const router = useRouter()
     const supabase = createClient()
 
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
-        setLoading(true)
+        showLoader()
 
         const { error } = await supabase.auth.signInWithPassword({
             email,
@@ -36,7 +38,7 @@ export default function LoginPage() {
 
         if (error) {
             toast.error(error.message)
-            setLoading(false)
+            hideLoader()
         } else {
             toast.success('Logged in successfully')
             router.refresh()
@@ -77,8 +79,8 @@ export default function LoginPage() {
                             />
                         </div>
                     </div>
-                    <Button className="w-full mt-6" type="submit" disabled={loading}>
-                        {loading ? 'Signing in...' : 'Sign In'}
+                    <Button className="w-full mt-6" type="submit" disabled={isLoading}>
+                        {isLoading ? 'Signing in...' : 'Sign In'}
                     </Button>
                 </form>
             </CardContent>

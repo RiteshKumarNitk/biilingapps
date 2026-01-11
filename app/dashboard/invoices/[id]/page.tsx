@@ -1,6 +1,6 @@
 
 import { InvoiceView } from '@/components/invoices/invoice-view'
-import { createClient } from '@/utils/supabase/server'
+import { getInvoiceDetails } from '@/actions/invoices'
 import { notFound } from 'next/navigation'
 import { DownloadButton } from '@/components/invoices/download-button'
 import { ShareInvoiceButton } from '@/components/invoices/share-button'
@@ -11,13 +11,8 @@ export default async function InvoicePage({
     params: Promise<{ id: string }>
 }) {
     const { id } = await params;
-    const supabase = await createClient()
-
-    const { data: invoice } = await supabase.from('invoices').select('*').eq('id', id).single()
+    const { invoice, items, tenant } = await getInvoiceDetails(id)
     if (!invoice) notFound()
-
-    const { data: items } = await supabase.from('invoice_items').select('*').eq('invoice_id', id)
-    const { data: tenant } = await supabase.from('tenants').select('*').eq('id', invoice.tenant_id).single()
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

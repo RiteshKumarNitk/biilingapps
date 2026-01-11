@@ -70,9 +70,11 @@ interface PartyFormProps {
     partyId?: string
 }
 
+import { useLoading } from '@/components/providers/loading-provider'
+
 export function PartyForm({ initialData, partyId }: PartyFormProps) {
     const router = useRouter()
-    const [loading, setLoading] = useState(false)
+    const { showLoader, hideLoader, isLoading } = useLoading()
     const [activeTab, setActiveTab] = useState("gst-address")
 
     // Determine default balance type from initial data or default to 'to_receive'
@@ -109,7 +111,7 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
 
     async function handleSave(data: PartyFormValues, shouldRedirect: boolean = true) {
         try {
-            setLoading(true)
+            showLoader()
             // Transform data for DB if needed (e.g., separating shipping address if same)
             const submissionData = {
                 ...data,
@@ -139,13 +141,13 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
                         shipping_address: ''
                     })
                     router.refresh()
+                    hideLoader()
                 }
             }
         } catch (error: any) {
             console.error(error)
             toast.error(error.message || 'Failed to save party')
-        } finally {
-            setLoading(false)
+            hideLoader()
         }
     }
 
@@ -449,17 +451,17 @@ export function PartyForm({ initialData, partyId }: PartyFormProps) {
                         type="button"
                         variant="outline"
                         onClick={handleSubmit(onSaveAndNew)}
-                        disabled={loading || !form.formState.isValid}
+                        disabled={isLoading || !form.formState.isValid}
                         className="border-blue-200 text-blue-600 hover:bg-blue-50 h-11 px-6"
                     >
                         Save & New
                     </Button>
                     <Button
                         type="submit"
-                        disabled={loading || !form.formState.isValid}
+                        disabled={isLoading || !form.formState.isValid}
                         className="bg-blue-600 hover:bg-blue-700 text-white h-11 px-8 shadow-md shadow-blue-200"
                     >
-                        {loading ? 'Saving...' : 'Save'}
+                        {isLoading ? 'Saving...' : 'Save'}
                     </Button>
                 </div>
             </form>

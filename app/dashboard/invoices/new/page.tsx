@@ -16,8 +16,8 @@ import { cn } from '@/lib/utils'
 import { TransactionTable } from '@/components/transactions/transaction-table'
 import { TransactionItem, STATES } from '@/components/transactions/shared'
 import { getProducts } from '@/actions/inventory'
-import { getParties, createParty } from '@/actions/parties'
-import { createInvoice } from '@/actions/invoices'
+import { getParties, createParty, getParty } from '@/actions/parties'
+import { createInvoice, getLastInvoiceNumber } from '@/actions/invoices'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { ModernLoader, FullPageLoader } from '@/components/ui/modern-loader'
@@ -43,6 +43,7 @@ export default function AddSalePage() {
     const [phoneNumber, setPhoneNumber] = useState('')
     const [billingAddress, setBillingAddress] = useState('')
     const [shippingAddress, setShippingAddress] = useState('') // Sync with billing by default?
+    const [selectedPartyBalance, setSelectedPartyBalance] = useState(0)
 
     // Items
     const [items, setItems] = useState<TransactionItem[]>([
@@ -83,12 +84,16 @@ export default function AddSalePage() {
     useEffect(() => {
         const load = async () => {
             try {
-                const [pData, partyData] = await Promise.all([
+                const [pData, partyData, nextInv] = await Promise.all([
                     getProducts(1, 1000),
-                    getParties('customer')
+                    getParties('customer', '', Date.now()),
+                    getLastInvoiceNumber()
                 ])
                 setProducts(pData.data || [])
                 setParties(partyData || [])
+                if (nextInv) {
+                    setInvoiceNumber(nextInv)
+                }
             } catch (e) {
                 toast.error("Failed to load data")
             } finally {
@@ -99,14 +104,25 @@ export default function AddSalePage() {
     }, [])
 
     // Handle Party Selection
-    const handlePartySelect = (id: string) => {
+    const handlePartySelect = async (id: string) => {
         const party = parties.find(p => p.id === id)
         if (party) {
             setSelectedPartyId(id)
             setBillingName(party.name)
             setPhoneNumber(party.phone || '')
             setBillingAddress(party.address || '')
-            // setShippingAddress(party.address || '') 
+            setSelectedPartyBalance(party.current_balance || 0)
+
+            try {
+                // Fetch fresh balance in background to ensure accuracy
+                const freshParty = await getParty(id)
+                if (freshParty) {
+                    setParties(prev => prev.map(p => p.id === id ? freshParty : p))
+                    setSelectedPartyBalance(freshParty.current_balance || 0)
+                }
+            } catch (e) {
+                console.error("Failed to refresh party balance", e)
+            }
         }
     }
 
@@ -129,18 +145,50 @@ export default function AddSalePage() {
             // We need to match InvoiceFormValues from schema
             const payload: any = {
                 invoice_number: invoiceNumber,
+                party_id: selectedPartyId, // Include Party ID
                 party_name: billingName || "Cash Sale", // Or Party Name
                 date: invoiceDate,
                 status: 'generated',
                 payment_status: balanceDue <= 0 ? 'paid' : (paidAmount > 0 ? 'partial' : 'unpaid'),
-                items: items.map(item => ({
-                    product_id: item.productId,
-                    description: item.description,
-                    quantity: item.quantity,
-                    unit_price: item.price,
-                    gst_rate: item.gstRate,
-                    total_amount: item.amount
-                }))
+                received_amount: paidAmount, // Pass the actual received amount
+                items: items.map(item => {
+                    // 1. Calculate Discount Amount
+                    const baseAmount = (item.quantity || 0) * (item.price || 0)
+                    let discountAmt = 0
+                    if (item.discountType === 'percentage') {
+                        discountAmt = baseAmount * ((item.discountValue || 0) / 100)
+                    } else {
+                        discountAmt = item.discountValue || 0
+                    }
+
+                    // 2. Normalize to Exclusive if Inclusive
+                    let finalUnitPrice = item.price
+                    let finalDiscount = discountAmt
+                    let finalTaxAmount = item.taxAmount
+
+                    // Note: item.taxAmount is already calculated correctly by the table logic
+                    // We just need to adjust unit_price and discount to be ex-tax for consistent DB storage
+                    if (item.taxType === 'inclusive') {
+                        const gstFactor = 1 + ((item.gstRate || 0) / 100)
+                        finalUnitPrice = item.price / gstFactor
+                        finalDiscount = discountAmt / gstFactor
+
+                        // In inclusive mode, the table calculated taxAmount based on the (Price - Disc).
+                        // We trust item.taxAmount from the table.
+                    }
+
+                    return {
+                        product_id: item.productId,
+                        description: item.description,
+                        quantity: item.quantity,
+                        unit: item.unit,
+                        unit_price: finalUnitPrice,
+                        gst_rate: item.gstRate,
+                        discount: finalDiscount,
+                        tax_amount: finalTaxAmount,
+                        total_amount: item.amount
+                    }
+                })
             }
 
             await createInvoice(payload)
@@ -249,10 +297,12 @@ export default function AddSalePage() {
                                     onChange={e => setPhoneNumber(e.target.value)}
                                     className="bg-slate-50 border-slate-200 h-9"
                                 />
-                                {transactionType === 'credit' && (
+                                {transactionType === 'credit' && selectedPartyId && (
                                     <div className="border bg-red-50 text-red-600 px-3 py-1.5 rounded text-xs flex items-center justify-between">
                                         <span>Balance:</span>
-                                        <span className="font-bold">₹ 0.00</span>
+                                        <span className={cn("font-bold", (selectedPartyBalance || 0) >= 0 ? "text-green-600" : "text-red-600")}>
+                                            ₹ {Math.abs(selectedPartyBalance || 0).toLocaleString()} {(selectedPartyBalance || 0) >= 0 ? ' (Rec)' : ' (Pay)'}
+                                        </span>
                                     </div>
                                 )}
                             </div>

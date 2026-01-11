@@ -75,13 +75,127 @@ export async function createPurchaseBill(data: any) {
     }
 
     // 4. Update Party Ledger (Payable)
-    // Ideally done via trigger or separate ledger service
-    // For now assuming existing backend logic or we just record the payment if any.
-    if (data.payment_status !== 'paid') {
-        // Record payable?
-        // Check partying mapping.
+    if (data.party_id) {
+        try {
+            const { recalculatePartyBalance } = await import('@/actions/parties')
+            await recalculatePartyBalance(data.party_id)
+        } catch (e) {
+            console.error("Failed to sync party balance (purchase):", e)
+        }
     }
 
     revalidatePath('/dashboard/purchase/bills')
     return po
+}
+
+export async function getPurchaseStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
+    const supabase = await createClient()
+    let query = supabase.from('purchase_orders').select('grand_total, status')
+
+    if (filters?.search) query = query.ilike('party_name', `%${filters.search}%`)
+    if (filters?.startDate) query = query.gte('date', filters.startDate.toISOString())
+    if (filters?.endDate) query = query.lte('date', filters.endDate.toISOString())
+    if (filters?.status) query = query.eq('status', filters.status)
+
+    const { data, error } = await query
+
+    if (error || !data) return { total: 0, count: 0 }
+
+    const total = data.reduce((sum, bill) => sum + (bill.grand_total || 0), 0)
+
+    return { total, count: data.length }
+}
+
+export async function getPurchaseBills(page = 1, pageSize = 10, filters?: { search?: string; startDate?: Date; endDate?: Date }) {
+    const supabase = await createClient()
+    const start = (page - 1) * pageSize
+    const end = start + pageSize - 1
+
+    let query = supabase
+        .from('purchase_orders')
+        .select('*', { count: 'exact' })
+        .range(start, end)
+        .order('date', { ascending: false })
+
+    if (filters?.search) {
+        query = query.ilike('party_name', `%${filters.search}%`)
+    }
+    if (filters?.startDate) {
+        query = query.gte('date', filters.startDate.toISOString())
+    }
+    if (filters?.endDate) {
+        query = query.lte('date', filters.endDate.toISOString())
+    }
+
+    const { data, error, count } = await query
+
+    if (error) {
+        console.error('Error fetching purchase bills:', error)
+        return { data: [], total: 0 }
+    }
+
+    return { data, total: count || 0 }
+}
+
+export async function deletePurchaseBill(id: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // 1. Get PO Details
+    const { data: po, error: poError } = await supabase
+        .from('purchase_orders')
+        .select(`*, po_items(*)`)
+        .eq('id', id)
+        .single()
+
+    if (poError || !po) throw new Error('Purchase Bill not found')
+
+    // 2. Reverse Stock (Decrease)
+    if (po.po_items && po.po_items.length > 0) {
+        for (const item of po.po_items) {
+            if (item.product_id) {
+                const { data: prod } = await supabase
+                    .from('products')
+                    .select('stock_quantity')
+                    .eq('id', item.product_id)
+                    .single()
+
+                if (prod) {
+                    // Decrease stock
+                    await supabase.from('products')
+                        .update({ stock_quantity: Math.max(0, prod.stock_quantity - item.quantity) })
+                        .eq('id', item.product_id)
+
+                    // Record Movement
+                    await supabase.from('stock_movements').insert({
+                        tenant_id: po.tenant_id,
+                        product_id: item.product_id,
+                        type: 'purchase_deleted',
+                        quantity: item.quantity,
+                        reference_id: id,
+                        description: `Purchase Bill ${po.po_number} Deleted`
+                    })
+                }
+            }
+        }
+    }
+
+    // 3. Delete PO
+    const { error: delError } = await supabase.from('purchase_orders').delete().eq('id', id)
+    if (delError) throw new Error(delError.message)
+
+    // 4. Update Party Balance
+    if (po.party_id) {
+        try {
+            const { recalculatePartyBalance } = await import('@/actions/parties')
+            await recalculatePartyBalance(po.party_id)
+        } catch (e) {
+            console.error("Failed to sync balance after delete:", e)
+        }
+    }
+
+    revalidatePath('/dashboard/purchase/bills')
+    revalidatePath('/dashboard/parties')
+    return { success: true }
 }

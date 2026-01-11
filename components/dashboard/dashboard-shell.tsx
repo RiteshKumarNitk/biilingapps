@@ -13,9 +13,11 @@ import Link from 'next/link'
 
 interface DashboardShellProps {
     children: React.ReactNode
+    user?: any
+    profile?: any
 }
 
-export function DashboardShell({ children }: DashboardShellProps) {
+export function DashboardShell({ children, user, profile }: DashboardShellProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
 
     return (
@@ -58,7 +60,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                         <div className="flex items-center gap-3 mb-4">
                             <span className="h-8 w-8 rounded bg-blue-500 flex items-center justify-center text-white font-bold">M</span>
                             <div className="flex flex-col overflow-hidden">
-                                <span className="text-sm font-semibold whitespace-nowrap">My Business</span>
+                                <span className="text-sm font-semibold whitespace-nowrap">{(Array.isArray(profile?.tenants) ? profile.tenants[0]?.name : profile?.tenants?.name) || "My Business"}</span>
                                 <span className="text-[10px] text-slate-400 truncate">Owner</span>
                             </div>
                         </div>
@@ -150,7 +152,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
                         <Button size="icon" variant="ghost" className="rounded-full text-slate-600 hover:bg-slate-100">
                             <MoreVertical className="h-5 w-5" />
                         </Button>
-                        <UserNav />
+                        <UserNav user={user} profile={profile} />
                     </div>
                 </header>
 

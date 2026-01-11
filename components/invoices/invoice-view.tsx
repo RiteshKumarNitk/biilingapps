@@ -41,19 +41,31 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead>#</TableHead>
                             <TableHead>Description</TableHead>
+                            <TableHead>HSN/SAC</TableHead>
                             <TableHead className="text-right">Qty</TableHead>
-                            <TableHead className="text-right">Unit Price</TableHead>
+                            <TableHead className="text-right">Unit</TableHead>
+                            <TableHead className="text-right">Price</TableHead>
+                            <TableHead className="text-right">Disc</TableHead>
+                            <TableHead className="text-right">GST %</TableHead>
+                            <TableHead className="text-right">Tax Amt</TableHead>
                             <TableHead className="text-right">Total</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {items.map((item: any) => (
+                        {items.map((item: any, index: number) => (
                             <TableRow key={item.id}>
-                                <TableCell>{item.description}</TableCell>
+                                <TableCell>{index + 1}</TableCell>
+                                <TableCell className="font-medium">{item.description}</TableCell>
+                                <TableCell>{item.products?.hsn_code || '-'}</TableCell>
                                 <TableCell className="text-right">{item.quantity}</TableCell>
+                                <TableCell className="text-right">{item.unit || '-'}</TableCell>
                                 <TableCell className="text-right">₹{item.unit_price}</TableCell>
-                                <TableCell className="text-right">₹{item.total_amount}</TableCell>
+                                <TableCell className="text-right">{item.discount ? `₹${item.discount}` : '-'}</TableCell>
+                                <TableCell className="text-right">{item.gst_rate}%</TableCell>
+                                <TableCell className="text-right">₹{(item.tax_amount || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-semibold">₹{item.total_amount}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -63,16 +75,20 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                     <div className="w-1/3 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span>Subtotal:</span>
-                            <span>₹{invoice.subtotal}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm text-red-500">
+                            <span>Discount:</span>
+                            <span>-₹{items.reduce((acc, item) => acc + (item.discount || 0), 0).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                             <span>Tax:</span>
-                            <span>₹{invoice.grand_total - invoice.subtotal}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.tax_amount || 0), 0).toFixed(2)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold text-lg">
                             <span>Total:</span>
-                            <span>₹{invoice.grand_total}</span>
+                            <span>₹{invoice.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>

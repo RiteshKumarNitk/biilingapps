@@ -4,13 +4,17 @@ import * as z from 'zod'
 export const invoiceItemSchema = z.object({
     product_id: z.string().optional(),
     description: z.string().min(1, 'Description is required'),
+    unit: z.string().optional(),
     quantity: z.number().min(1, 'Quantity must be at least 1'),
     unit_price: z.number().min(0),
+    discount: z.number().min(0).optional().default(0),
     gst_rate: z.number().min(0),
+    tax_amount: z.number().min(0).optional(),
     total_amount: z.number().min(0),
 })
 
 export const invoiceSchema = z.object({
+    party_id: z.string().optional(),
     party_name: z.string().min(1, 'Customer Name is required'),
     invoice_number: z.string().min(1, 'Invoice Number is required'),
     date: z.date(),
@@ -18,6 +22,7 @@ export const invoiceSchema = z.object({
     items: z.array(invoiceItemSchema).min(1, 'Add at least one item'),
     status: z.enum(['draft', 'generated', 'paid', 'overdue', 'cancelled']),
     payment_status: z.enum(['unpaid', 'partial', 'paid']),
+    received_amount: z.number().min(0).optional().default(0),
 })
 
 export type InvoiceFormValues = z.infer<typeof invoiceSchema>
