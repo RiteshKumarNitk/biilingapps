@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from 'sonner';
 import "./globals.css";
@@ -29,10 +30,12 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <LoadingProvider>
-          {children}
-          <Toaster position="bottom-right" richColors />
-        </LoadingProvider>
+        <Suspense fallback={null}>
+          <LoadingProvider>
+            {children}
+            <Toaster position="bottom-right" richColors />
+          </LoadingProvider>
+        </Suspense>
       </body>
     </html>
   );

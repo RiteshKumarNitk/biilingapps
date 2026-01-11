@@ -77,7 +77,7 @@ export function SaleOrderForm() {
     }, [])
 
     const form = useForm<SaleOrderFormValues>({
-        resolver: zodResolver(saleOrderSchema),
+        resolver: zodResolver(saleOrderSchema) as any,
         defaultValues: {
             date: new Date(),
             items: [{ description: '', quantity: 1, unit_price: 0, gst_rate: 0, tax_amount: 0, total_amount: 0 }],
@@ -108,6 +108,7 @@ export function SaleOrderForm() {
                 const tax = base * (item.gst_rate / 100)
                 return {
                     ...item,
+                    product_id: item.product_id || null,
                     tax_amount: tax,
                     total_amount: base + tax
                 }

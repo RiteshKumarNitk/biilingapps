@@ -54,7 +54,7 @@ export function PaymentInForm() {
     }, [])
 
     const form = useForm<PaymentInFormValues>({
-        resolver: zodResolver(paymentInSchema),
+        resolver: zodResolver(paymentInSchema) as any,
         defaultValues: {
             date: new Date(),
             payment_type: 'cash',

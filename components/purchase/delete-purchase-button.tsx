@@ -22,10 +22,13 @@ export function DeletePurchaseButton({ id }: { id: string }) {
     }
 
     return (
-        <Trash2
-            className="h-4 w-4 hover:text-red-600 cursor-pointer text-slate-400 transition-colors"
+        <button
+            type="button"
             onClick={handleDelete}
             title="Delete Bill"
-        />
+            className="hover:text-red-600 text-slate-400 transition-colors"
+        >
+            <Trash2 className="h-4 w-4" />
+        </button>
     )
 }

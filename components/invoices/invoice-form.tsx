@@ -22,7 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { invoiceSchema, InvoiceFormValues } from '@/lib/schemas/invoice'
-import { createInvoice } from '@/actions/invoices'
+
 import { getProducts, getUnits } from '@/actions/inventory'
 import { getParties } from '@/actions/parties'
 import { useRouter } from 'next/navigation'
@@ -58,7 +58,7 @@ export function InvoiceForm() {
                 getLastInvoiceNumber()
             ])
 
-            setProducts(prods || [])
+            setProducts(prods?.data || [])
             setParties(parts || [])
             setUnits(unitList || [])
 
@@ -71,10 +71,14 @@ export function InvoiceForm() {
     }, [])
 
     const form = useForm<InvoiceFormValues>({
-        resolver: zodResolver(invoiceSchema),
+        resolver: zodResolver(invoiceSchema) as any,
         defaultValues: {
             invoice_number: '',
             date: new Date(),
+            party_name: '',
+            status: 'generated',
+            payment_status: 'unpaid',
+            received_amount: 0,
             items: [{ product_id: '', description: '', quantity: 1, unit_price: 0, gst_rate: 0, total_amount: 0, unit: 'pcs', discount: 0 }]
         }
     })
@@ -306,7 +310,7 @@ export function InvoiceForm() {
                 <div className="space-y-6">
                     <div className="flex justify-between items-center">
                         <h3 className="text-xl font-bold tracking-tight text-foreground">Items</h3>
-                        <Button type="button" variant="outline" size="sm" onClick={() => append({ description: '', quantity: 1, unit_price: 0, gst_rate: 0, total_amount: 0 })} className="h-10 hover:bg-primary/10 hover:text-primary transition-all border-primary/20">
+                        <Button type="button" variant="outline" size="sm" onClick={() => append({ product_id: '', description: '', quantity: 1, unit_price: 0, gst_rate: 0, total_amount: 0, unit: 'pcs', discount: 0 })} className="h-10 hover:bg-primary/10 hover:text-primary transition-all border-primary/20">
                             <Plus className="h-4 w-4 mr-2" /> Add Item
                         </Button>
                     </div>
