@@ -129,6 +129,7 @@ export default async function QuotationsPage() {
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 pl-6 w-[120px]">DATE</TableHead>
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11">REFERENCE NO</TableHead>
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11">PARTY NAME</TableHead>
+                                    <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right">DISCOUNT</TableHead>
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right">AMOUNT</TableHead>
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 text-right">BALANCE</TableHead>
                                     <TableHead className="bg-[#FAFAFA] text-xs font-semibold text-slate-500 h-11 w-[120px]">STATUS</TableHead>
@@ -167,6 +168,9 @@ export default async function QuotationsPage() {
                                                 </TableCell>
                                                 <TableCell className="py-4 text-sm font-medium text-slate-700">
                                                     {q.party_name}
+                                                </TableCell>
+                                                <TableCell className="py-4 text-sm font-medium text-slate-600 text-right">
+                                                    ₹ {(q.discount_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                                 </TableCell>
                                                 <TableCell className="py-4 text-sm font-semibold text-slate-700 text-right">
                                                     ₹ {q.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -221,8 +225,10 @@ export default async function QuotationsPage() {
                                                                     </DropdownMenuItem>
                                                                 )}
                                                                 <DropdownMenuSeparator />
-                                                                <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
-                                                                    <Printer className="h-3.5 w-3.5" /> Print
+                                                                <DropdownMenuItem asChild>
+                                                                    <Link href={`/print/quotations/${q.id}`} target="_blank" className="flex items-center gap-2 cursor-pointer">
+                                                                        <Printer className="h-3.5 w-3.5" /> Print
+                                                                    </Link>
                                                                 </DropdownMenuItem>
                                                                 <DropdownMenuItem className="flex items-center gap-2 cursor-pointer">
                                                                     <Share2 className="h-3.5 w-3.5" /> Share

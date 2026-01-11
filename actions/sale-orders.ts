@@ -177,26 +177,8 @@ export async function convertOrdersToInvoice(orderIds: string[]) {
         try {
             await createInvoice({
                 invoice_number: invNum,
-                party_name: '', // handled by logic or fetch? createInvoice uses logic? No, createInvoice takes party_name properly.
-                // We need to fetch party name if not in order row? 
-                // Actually createInvoice schema might need party_id if we modified it?
-                // Looking at createInvoice in actions/invoices.ts: it takes `party_name` text.
-                // We should pass party_id too ideally, but the current createInvoice implementation in `actions/invoices.ts` 
-                // doesn't seem to take party_id explicitly in the `insert`? 
-                // Wait, checking `actions/invoices.ts`...
-                // Line 40: `party_name: validated.party_name`
-                // It does NOT insert `party_id`?? That seems like a bug in existing `actions/invoices.ts` or I missed it.
-                // Checking schema: `party_id` is a column.
-                // Let's re-read `actions/invoices.ts`
-                // It does NOT insert party_id! 
-                // I should probably fix that or just follow the pattern. 
-                // Use `party_name` from order. Wait, order has `party_id`.
-                // I will update createInvoice locally if needed or just pass what I can.
-                // I'll stick to passing `party_name` for now to match compile, but I'll try to retrieve it.
-
-                // Fetch party name
-                // const { data: party } = await supabase.from('parties').select('name').eq('id', order.party_id).single()
-
+                party_id: order.party_id,
+                party_name: order.party_name || 'Unknown',
                 date: new Date(), // Invoice Date = Now
                 due_date: order.due_date ? new Date(order.due_date) : undefined,
                 status: 'generated',
@@ -204,9 +186,12 @@ export async function convertOrdersToInvoice(orderIds: string[]) {
                 items: order.sale_order_items.map((item: any) => ({
                     product_id: item.product_id,
                     description: item.description,
+                    unit: 'pcs',
                     quantity: item.quantity,
                     unit_price: item.unit_price,
+                    discount: 0,
                     gst_rate: item.gst_rate,
+                    tax_amount: item.tax_amount,
                     total_amount: item.total_amount
                 }))
             })

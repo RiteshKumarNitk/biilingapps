@@ -41,6 +41,42 @@ export async function getQuotations(type: 'estimate' | 'proforma' = 'estimate') 
     return { data, summary }
 }
 
+export async function getQuotation(id: string) {
+    const supabase = await createClient()
+
+    // 1. Get Quotation
+    const { data: quotation, error: argError } = await supabase
+        .from('quotations')
+        .select('*')
+        .eq('id', id)
+        .single()
+
+    if (argError) throw new Error(argError.message)
+
+    // 2. Get Items
+    const { data: items, error: itemsError } = await supabase
+        .from('quotation_items')
+        .select(`
+            *,
+            products (
+                name,
+                hsn_code
+            )
+        `)
+        .eq('quotation_id', id)
+
+    if (itemsError) throw new Error(itemsError.message)
+
+    // 3. Get Tenant
+    const { data: tenant } = await supabase
+        .from('tenants')
+        .select('*')
+        .eq('id', quotation.tenant_id)
+        .single()
+
+    return { quotation, items, tenant }
+}
+
 export async function createQuotation(data: any) {
     const supabase = await createClient()
 
