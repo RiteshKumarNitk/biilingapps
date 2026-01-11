@@ -183,7 +183,7 @@ export async function convertOrdersToInvoice(orderIds: string[]) {
                 due_date: order.due_date ? new Date(order.due_date) : undefined,
                 status: 'generated',
                 payment_status: 'unpaid',
-                received_amount: 0,
+                received_amount: 0, // Force redeploy
                 items: order.sale_order_items.map((item: any) => ({
                     product_id: item.product_id,
                     description: item.description,
