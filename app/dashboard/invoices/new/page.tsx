@@ -123,8 +123,8 @@ export default function AddSalePage() {
                                     setSelectedPartyId(p.id)
                                     setBillingName(p.name)
                                     setPhoneNumber(p.phone || '')
-                                    setBillingAddress(p.address || '')
-                                    // shipping
+                                    setBillingAddress(p.billing_address || '')
+                                    setShippingAddress(p.shipping_address || '')
                                     setSelectedPartyBalance(p.current_balance || 0)
                                 } else {
                                     // Party loaded explicitly if needed, but assuming list covers active ones
@@ -170,7 +170,8 @@ export default function AddSalePage() {
                                     setSelectedPartyId(p.id)
                                     setBillingName(p.name)
                                     setPhoneNumber(p.phone || '')
-                                    setBillingAddress(p.address || '')
+                                    setBillingAddress(p.billing_address || '')
+                                    setShippingAddress(p.shipping_address || '')
                                     setSelectedPartyBalance(p.current_balance || 0)
                                 } else {
                                     setSelectedPartyId(order.party_id)
@@ -217,7 +218,8 @@ export default function AddSalePage() {
             setSelectedPartyId(id)
             setBillingName(party.name)
             setPhoneNumber(party.phone || '')
-            setBillingAddress(party.address || '')
+            setBillingAddress(party.billing_address || '')
+            setShippingAddress(party.shipping_address || '')
             setSelectedPartyBalance(party.current_balance || 0)
 
             try {
@@ -411,7 +413,7 @@ export default function AddSalePage() {
                                 <Button
                                     variant="link"
                                     className="h-auto p-0 text-blue-600 text-xs"
-                                    onClick={() => router.push('/dashboard/parties/create')}
+                                    onClick={() => router.push('/dashboard/parties/new')}
                                 >
                                     + Add Party
                                 </Button>

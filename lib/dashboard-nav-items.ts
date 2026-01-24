@@ -68,7 +68,7 @@ export const dashboardNavItems: NavItem[] = [
             { title: 'Sale Order', href: '/dashboard/invoices/sale-order', quickAddLink: '/dashboard/invoices/sale-order/new' },
             { title: 'Delivery Challan', href: '/dashboard/invoices/delivery-challan', quickAddLink: '/dashboard/invoices/delivery-challan/new' },
             { title: 'Sale Return/ Credit Note', href: '/dashboard/invoices/credit-note', quickAddLink: '/dashboard/invoices/credit-note/new' },
-            { title: 'Vyapar POS', href: '/dashboard/pos' },
+            { title: 'BahiKhata POS', href: '/dashboard/pos' },
         ],
     },
 

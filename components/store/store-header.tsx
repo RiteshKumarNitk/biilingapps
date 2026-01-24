@@ -13,7 +13,7 @@ export function StoreHeader() {
         <header className="sticky top-0 z-40 w-full border-b bg-background">
             <div className="container flex h-16 items-center justify-between mx-auto px-4">
                 <Link href="/store" className="flex items-center space-x-2 font-bold text-xl">
-                    <span className="text-primary">⚡</span> Vyapar Store
+                    <span className="text-primary">⚡</span> BahiKhata Store
                 </Link>
                 <div className="flex items-center space-x-4">
                     <Link href="/dashboard">

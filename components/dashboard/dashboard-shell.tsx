@@ -36,7 +36,7 @@ export function DashboardShell({ children, user, profile }: DashboardShellProps)
                             <PanelsTopLeft className="h-5 w-5 text-white" />
                         </div>
                         <div className={cn("flex flex-col transition-opacity duration-300", isCollapsed ? "opacity-0 w-0 hidden" : "opacity-100")}>
-                            <span className="font-bold text-slate-900 tracking-tight whitespace-nowrap">Vyapar App</span>
+                            <span className="font-bold text-slate-900 tracking-tight whitespace-nowrap">BahiKhata</span>
                             <span className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Business OS</span>
                         </div>
                     </Link>
@@ -108,7 +108,7 @@ export function DashboardShell({ children, user, profile }: DashboardShellProps)
                                             <PanelsTopLeft className="h-5 w-5 text-white" />
                                         </div>
                                         <div className="flex flex-col items-start">
-                                            <span className="font-bold text-slate-900">Vyapar App</span>
+                                            <span className="font-bold text-slate-900">BahiKhata</span>
                                             <span className="text-[10px] text-slate-500 uppercase">Business OS</span>
                                         </div>
                                     </SheetTitle>

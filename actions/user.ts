@@ -18,7 +18,15 @@ export async function getUserProfile() {
                 name,
                 address,
                 phone,
-                email
+                phone,
+                email,
+                gst_no,
+                cin_no,
+                gst_no,
+                cin_no,
+                logo_url,
+                signature_url,
+                settings
             )
         `)
         .eq('id', user.id)
@@ -40,7 +48,8 @@ export async function updateUserProfile(data: any) {
         .update({
             first_name: data.first_name,
             last_name: data.last_name,
-            // phone: data.phone 
+            phone: data.phone,
+            avatar_url: data.avatar_url
         })
         .eq('id', user.id)
 
@@ -63,13 +72,28 @@ export async function updateTenantSettings(data: any) {
 
     if (!profile?.tenant_id) throw new Error('Tenant not found')
 
+    // Fetch existing settings
+    const { data: tenantData } = await supabase
+        .from('tenants')
+        .select('settings')
+        .eq('id', profile.tenant_id)
+        .single()
+
     const { error } = await supabase
         .from('tenants')
         .update({
             name: data.company_name,
             address: data.address,
             phone: data.phone,
-            email: data.email
+            email: data.email,
+            gst_no: data.gst_no,
+            cin_no: data.cin_no,
+            logo_url: data.logo_url,
+            signature_url: data.signature_url,
+            settings: {
+                ...(tenantData?.settings as object || {}),
+                terms: data.terms
+            }
         })
         .eq('id', profile.tenant_id)
 

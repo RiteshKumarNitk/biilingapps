@@ -355,7 +355,7 @@ export function InvoiceForm() {
                                                 <FormItem>
                                                     <FormLabel className="text-sm font-medium text-muted-foreground">Qty</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
+                                                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -394,7 +394,7 @@ export function InvoiceForm() {
                                                 <FormItem>
                                                     <FormLabel className="text-sm font-medium text-muted-foreground">Price</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
+                                                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}
@@ -409,7 +409,7 @@ export function InvoiceForm() {
                                                 <FormItem>
                                                     <FormLabel className="text-sm font-medium text-muted-foreground">Disc.</FormLabel>
                                                     <FormControl>
-                                                        <Input type="number" {...field} onChange={e => field.onChange(parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
+                                                        <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : parseFloat(e.target.value))} className="h-11 bg-background/60 border-input/50 focus:ring-primary/20" />
                                                     </FormControl>
                                                 </FormItem>
                                             )}

@@ -21,8 +21,10 @@ import {
     Calendar as CalendarIcon,
     Plus,
     RefreshCw,
-    Trash2
+    Trash2,
+    Loader2
 } from 'lucide-react'
+import { createClient } from '@/utils/supabase/client'
 
 
 
@@ -81,6 +83,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
     const [units, setUnits] = useState(DEFAULT_UNITS)
     const [isAddingUnit, setIsAddingUnit] = useState(false)
     const [newUnitName, setNewUnitName] = useState("")
+    const [uploading, setUploading] = useState(false)
 
     useEffect(() => {
         // Fetch existing units from DB to populate dropdown
@@ -129,17 +132,54 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
 
     const { watch, setValue, control, handleSubmit, formState: { errors } } = form
     const itemType = watch('type')
+    const imageUrl = watch('image_url')
 
     const { fields, append, remove } = useFieldArray({
         control,
         name: "wholesale_prices"
     })
 
-
     const generateSku = () => {
-        const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+        const now = new Date()
+        const timePart = `${now.getHours()}${now.getMinutes()}${now.getSeconds()}`
+        const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0')
         const prefix = itemType === 'product' ? 'PRD' : 'SRV'
-        setValue('sku', `${prefix}-${random}`)
+        // Format: PRD-HHMMSS-RRR (Unlikely to collide)
+        setValue('sku', `${prefix}-${timePart}-${random}`)
+    }
+
+    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        try {
+            setUploading(true)
+            const supabase = createClient()
+            const fileExt = file.name.split('.').pop()
+            const fileName = `product-${Date.now()}.${fileExt}`
+            const filePath = `products/${fileName}`
+
+            // Use company-assets bucket
+            const { error: uploadError } = await supabase.storage
+                .from('company-assets')
+                .upload(filePath, file)
+
+            if (uploadError) {
+                throw uploadError
+            }
+
+            const { data: { publicUrl } } = supabase.storage
+                .from('company-assets')
+                .getPublicUrl(filePath)
+
+            setValue('image_url', publicUrl)
+            toast.success("Image uploaded")
+        } catch (error: any) {
+            toast.error("Upload failed")
+            console.error(error)
+        } finally {
+            setUploading(false)
+        }
     }
 
     async function handleSave(data: ProductFormValues, shouldRedirect: boolean = true) {
@@ -177,7 +217,14 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
             }
         } catch (error: any) {
             console.error(error)
-            toast.error(error.message || 'Failed to save item')
+            if (error.message && error.message.includes('products_tenant_id_sku_key')) {
+                toast.error('Duplicate Item Code (SKU). Please regenerate code.')
+                // Optional: Auto-regenerate? 
+                // generateSku() 
+                // toast.info('New Code Generated')
+            } else {
+                toast.error(error.message || 'Failed to save item')
+            }
         } finally {
             setLoading(false)
         }
@@ -322,9 +369,34 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                 />
                             </div>
                             <div className="md:col-span-2 flex justify-center">
-                                <div className="border-2 border-dashed border-slate-300 rounded-lg w-full h-[72px] flex flex-col items-center justify-center text-slate-400 hover:border-blue-500 hover:text-blue-500 cursor-pointer transition-colors bg-slate-50">
-                                    <Camera className="h-5 w-5 mb-1" />
-                                    <span className="text-xs font-medium">Add Image</span>
+                                <div className="space-y-2 w-full">
+                                    <FormLabel className="text-slate-600 block text-center">Item Image</FormLabel>
+                                    <div className="relative group mx-auto h-[100px] w-[100px] border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center overflow-hidden hover:border-blue-500 transition-colors bg-slate-50">
+                                        {imageUrl ? (
+                                            <>
+                                                <img src={imageUrl} alt="Item" className="h-full w-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setValue('image_url', '')}
+                                                    className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X className="h-3 w-3" />
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div className="flex flex-col items-center justify-center text-slate-400 p-2 text-center pointer-events-none">
+                                                {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6 mb-1" />}
+                                                <span className="text-[10px] leading-tight">Click to upload</span>
+                                            </div>
+                                        )}
+                                        <Input
+                                            type="file"
+                                            accept="image/*"
+                                            className="absolute inset-0 opacity-0 cursor-pointer"
+                                            onChange={handleImageUpload}
+                                            disabled={uploading}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -418,7 +490,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                                         <Input
                                                             type="number"
                                                             {...field}
-                                                            onChange={e => field.onChange(e.target.valueAsNumber)}
+                                                            onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                                                             className="pl-8 h-10 border-slate-300"
                                                         />
                                                         <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
@@ -459,7 +531,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                                     <Input
                                                         type="number"
                                                         {...field}
-                                                        onChange={e => field.onChange(e.target.valueAsNumber)}
+                                                        onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                                                         className="h-10 border-slate-300"
                                                     />
                                                 </FormItem>
@@ -522,7 +594,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                                                             type="number"
                                                                             placeholder="Qty"
                                                                             {...field}
-                                                                            onChange={e => field.onChange(e.target.valueAsNumber)}
+                                                                            onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                                                                             className="h-9 text-sm"
                                                                         />
                                                                     </FormControl>
@@ -540,7 +612,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                                                             type="number"
                                                                             placeholder="Price"
                                                                             {...field}
-                                                                            onChange={e => field.onChange(e.target.valueAsNumber)}
+                                                                            onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                                                                             className="h-9 text-sm"
                                                                         />
                                                                     </FormControl>
@@ -609,7 +681,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                                         <Input
                                                             type="number"
                                                             {...field}
-                                                            onChange={e => field.onChange(e.target.valueAsNumber)}
+                                                            onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)}
                                                             className="pl-8 h-10 border-slate-300"
                                                         />
                                                         <span className="absolute left-3 top-2.5 text-slate-400 text-sm">₹</span>
@@ -678,7 +750,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                         <FormItem>
                                             <FormLabel className="text-slate-600">Opening Stock</FormLabel>
                                             <FormControl>
-                                                <Input type="number" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} className="h-10 border-slate-300" />
+                                                <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)} className="h-10 border-slate-300" />
                                             </FormControl>
                                             <FormMessage />
                                         </FormItem>
@@ -732,7 +804,7 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                         <FormItem>
                                             <FormLabel className="text-slate-600">Minimum Stock Alert</FormLabel>
                                             <FormControl>
-                                                <Input type="number" {...field} onChange={e => field.onChange(e.target.valueAsNumber)} className="h-10 border-slate-300" />
+                                                <Input type="number" {...field} onChange={e => field.onChange(e.target.value === '' ? '' : e.target.valueAsNumber)} className="h-10 border-slate-300" />
                                             </FormControl>
                                             <FormDescription className="text-xs">Alert when stock falls below this level</FormDescription>
                                             <FormMessage />
