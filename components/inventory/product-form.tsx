@@ -369,34 +369,45 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
                                 />
                             </div>
                             <div className="md:col-span-2 flex justify-center">
-                                <div className="space-y-2 w-full">
+                                <div className="space-y-2 w-full flex flex-col items-center">
                                     <FormLabel className="text-slate-600 block text-center">Item Image</FormLabel>
-                                    <div className="relative group mx-auto h-[100px] w-[100px] border-2 border-dashed border-slate-300 rounded-lg flex flex-col items-center justify-center overflow-hidden hover:border-blue-500 transition-colors bg-slate-50">
+                                    <div className="relative group h-[120px] w-[120px] border-2 border-dashed border-slate-300 rounded-xl flex flex-col items-center justify-center overflow-hidden hover:border-blue-500 hover:bg-blue-50/30 transition-all bg-slate-50 shadow-inner">
                                         {imageUrl ? (
                                             <>
                                                 <img src={imageUrl} alt="Item" className="h-full w-full object-cover" />
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setValue('image_url', '')}
-                                                    className="absolute top-0 right-0 p-1 bg-red-500 text-white rounded-bl-md opacity-0 group-hover:opacity-100 transition-opacity"
-                                                >
-                                                    <X className="h-3 w-3" />
-                                                </button>
+                                                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                    <Button
+                                                        type="button"
+                                                        size="icon"
+                                                        variant="destructive"
+                                                        className="h-8 w-8 rounded-full"
+                                                        onClick={(e) => { e.stopPropagation(); setValue('image_url', ''); }}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
                                             </>
                                         ) : (
-                                            <div className="flex flex-col items-center justify-center text-slate-400 p-2 text-center pointer-events-none">
-                                                {uploading ? <Loader2 className="h-6 w-6 animate-spin" /> : <Camera className="h-6 w-6 mb-1" />}
-                                                <span className="text-[10px] leading-tight">Click to upload</span>
-                                            </div>
+                                            <label className="flex flex-col items-center justify-center text-slate-400 p-2 text-center cursor-pointer w-full h-full">
+                                                {uploading ? (
+                                                    <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+                                                ) : (
+                                                    <>
+                                                        <Camera className="h-8 w-8 mb-2 opacity-50" />
+                                                        <span className="text-[10px] font-semibold uppercase tracking-wider">Upload</span>
+                                                    </>
+                                                )}
+                                                <Input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleImageUpload}
+                                                    disabled={uploading}
+                                                />
+                                            </label>
                                         )}
-                                        <Input
-                                            type="file"
-                                            accept="image/*"
-                                            className="absolute inset-0 opacity-0 cursor-pointer"
-                                            onChange={handleImageUpload}
-                                            disabled={uploading}
-                                        />
                                     </div>
+                                    <p className="text-[10px] text-slate-400 mt-1">Recommended: 1:1 ratio</p>
                                 </div>
                             </div>
                         </div>

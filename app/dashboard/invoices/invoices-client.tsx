@@ -94,21 +94,26 @@ export const columns: ColumnDef<Invoice>[] = [
         },
     },
     {
-        id: "balance",
-        header: () => <div className="text-right">Balance</div>,
-        cell: ({ row }) => {
-            // Simple logic: if paid 0, else total
-            const status = row.getValue("payment_status")
-            const total = parseFloat(row.getValue("grand_total"))
-            const balance = status === 'paid' ? 0 : total
-            return <div className="text-right text-slate-500 font-medium">₹ {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-        },
+        id: "view",
+        header: () => <div className="text-center font-semibold">Details</div>,
+        cell: ({ row }) => (
+            <div className="flex justify-center text-center">
+                <Link href={`/dashboard/invoices/${row.original.id}`}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50/50">
+                        <Eye className="h-4 w-4" />
+                    </Button>
+                </Link>
+            </div>
+        ),
     },
     {
         id: "actions",
         enableHiding: false,
         cell: ({ row }) => {
             const invoice = row.original
+            const total = parseFloat(row.getValue("grand_total"))
+            const balance = invoice.payment_status === 'paid' ? 0 : total
+
             return (
                 <div className="text-right">
                     <DropdownMenu>
@@ -118,23 +123,31 @@ export const columns: ColumnDef<Invoice>[] = [
                                 <MoreHorizontal className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-[160px]">
-                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="w-[180px]">
+                            <DropdownMenuLabel className="flex flex-col">
+                                <span>Actions</span>
+                                <span className="text-[10px] text-slate-500 font-normal mt-0.5">
+                                    Balance: ₹ {balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </span>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem asChild>
                                 <Link href={`/dashboard/invoices/${invoice.id}`} className="cursor-pointer">
-                                    <Eye className="mr-2 h-4 w-4" /> View
+                                    <Eye className="mr-2 h-4 w-4" /> View Details
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem asChild>
                                 <Link href={`/print/invoices/${invoice.id}`} target="_blank" className="cursor-pointer">
-                                    <Printer className="mr-2 h-4 w-4" /> Print
+                                    <Printer className="mr-2 h-4 w-4" /> Print Invoice
                                 </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem>
-                                <Copy className="mr-2 h-4 w-4" /> Copy ID
+                            <DropdownMenuItem onClick={() => {
+                                navigator.clipboard.writeText(invoice.invoice_number)
+                            }}>
+                                <Copy className="mr-2 h-4 w-4" /> Copy Invoice #
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <div className="px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50 cursor-pointer">
+                            <div className="px-2 py-1.5 text-sm outline-none transition-colors hover:bg-rose-50 hover:text-rose-600 cursor-pointer rounded-sm">
                                 <DeleteInvoiceButton id={invoice.id} />
                             </div>
                         </DropdownMenuContent>
@@ -150,8 +163,6 @@ export function InvoicesClient({ data }: { data: Invoice[] }) {
         <DataTable
             columns={columns}
             data={data}
-            searchKey="party_name"
-            searchPlaceholder="Filter clients..."
         />
     )
 }

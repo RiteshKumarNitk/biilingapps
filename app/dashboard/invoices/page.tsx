@@ -2,6 +2,8 @@
 import { getInvoices, getInvoiceStats } from '@/actions/invoices'
 import { Button } from '@/components/ui/button'
 import { InvoicesClient } from './invoices-client'
+import { InvoicesSearch } from './search'
+import { InvoicesFilters } from './filters'
 import Link from 'next/link'
 import { Card, CardContent } from '@/components/ui/card'
 import { parseISO } from 'date-fns'
@@ -25,6 +27,10 @@ export default async function SaleInvoicesPage({
 }) {
     const params = await searchParams
     const search = typeof params.search === 'string' ? params.search : undefined
+    const status = typeof params.status === 'string' ? params.status : undefined
+    const sortBy = typeof params.sortBy === 'string' ? params.sortBy : undefined
+    const sortOrder = (params.sortOrder === 'asc' || params.sortOrder === 'desc') ? params.sortOrder : undefined
+
     const startDateParam = typeof params.startDate === 'string' ? params.startDate : undefined
     const endDateParam = typeof params.endDate === 'string' ? params.endDate : undefined
 
@@ -38,13 +44,17 @@ export default async function SaleInvoicesPage({
     const { data: invoices } = await getInvoices(1, 100, {
         search,
         startDate,
-        endDate
+        endDate,
+        status,
+        sortBy,
+        sortOrder
     })
 
     const { totalSales, received, balance } = await getInvoiceStats({
         search,
         startDate,
-        endDate
+        endDate,
+        status
     })
 
     return (
@@ -128,21 +138,12 @@ export default async function SaleInvoicesPage({
             </div>
 
             {/* Filters & Actions Bar */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search by invoice # or client..."
-                        defaultValue={search}
-                        className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
-                    />
-                </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-3">
+                <InvoicesSearch />
 
                 <div className="flex items-center gap-2">
                     <DatePickerWithRange />
-                    <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 text-slate-500 hover:text-slate-700">
-                        <Filter className="h-4 w-4" />
-                    </Button>
+                    <InvoicesFilters />
                 </div>
             </div>
 

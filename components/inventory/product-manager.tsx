@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useMemo, useEffect } from 'react'
-import { Search, Plus, ExternalLink, MoreVertical, SlidersHorizontal, ArrowUpRight, ArrowDownLeft, Pencil, Trash2 } from 'lucide-react'
+import { Search, Plus, ExternalLink, MoreVertical, SlidersHorizontal, ArrowUpRight, ArrowDownLeft, Pencil, Trash2, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -104,17 +104,25 @@ export function ProductManager({ items, selectedItem, onSelect, onRefresh }: Pro
                             key={item.id}
                             onClick={() => onSelect(item)}
                             className={cn(
-                                "flex items-center justify-between p-3 border-b hover:bg-slate-50 cursor-pointer transition-colors",
+                                "flex items-center gap-3 p-3 border-b hover:bg-slate-50 cursor-pointer transition-colors",
                                 selectedItem?.id === item.id ? "bg-blue-50 border-l-4 border-l-blue-600 border-b-blue-100" : "border-l-4 border-l-transparent"
                             )}
                         >
-                            <div className="flex flex-col gap-0.5 max-w-[70%]">
+                            <div className="h-10 w-10 rounded-md border bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center">
+                                {item.image_url ? (
+                                    <img src={item.image_url} alt={item.name} className="h-full w-full object-cover" />
+                                ) : (
+                                    <Package className="h-5 w-5 text-slate-300" />
+                                )}
+                            </div>
+                            <div className="flex flex-col gap-0.5 flex-1 min-w-0">
                                 <span className={cn("font-medium text-sm truncate", selectedItem?.id === item.id ? "text-blue-700" : "text-slate-700")}>
                                     {item.name}
                                 </span>
+                                <span className="text-[10px] text-slate-500 font-mono">{item.sku || 'No Code'}</span>
                             </div>
                             <span className={cn(
-                                "font-mono text-sm font-medium",
+                                "font-mono text-sm font-medium shrink-0",
                                 item.stock_quantity <= (item.low_stock_threshold || 0) ? "text-red-600" : "text-emerald-600"
                             )}>
                                 {item.stock_quantity}
@@ -133,31 +141,50 @@ export function ProductManager({ items, selectedItem, onSelect, onRefresh }: Pro
                     <>
                         {/* Header Card */}
                         <div className="m-4 bg-white rounded-lg shadow-sm border p-5 shrink-0">
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">{selectedItem.name}</h2>
+                            <div className="flex items-start justify-between mb-6">
+                                <div className="flex gap-4">
+                                    <div className="h-20 w-20 rounded-xl border bg-slate-50 overflow-hidden flex items-center justify-center shadow-sm">
+                                        {selectedItem.image_url ? (
+                                            <img src={selectedItem.image_url} alt={selectedItem.name} className="h-full w-full object-cover" />
+                                        ) : (
+                                            <Package className="h-8 w-8 text-slate-300" />
+                                        )}
+                                    </div>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-center gap-2">
+                                            <h2 className="text-2xl font-bold text-slate-800 uppercase tracking-tight">{selectedItem.name}</h2>
 
-                                    <Link href={`/dashboard/inventory/${selectedItem.id}`}>
-                                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600">
-                                            <Pencil className="h-4 w-4" />
-                                        </Button>
-                                    </Link>
+                                            <Link href={`/dashboard/inventory/${selectedItem.id}`}>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-blue-600">
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                            </Link>
 
-                                    <DropdownMenu>
-                                        <DropdownMenuTrigger asChild>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600">
-                                                <MoreVertical className="h-4 w-4" />
-                                            </Button>
-                                        </DropdownMenuTrigger>
-                                        <DropdownMenuContent align="start">
-                                            <DropdownMenuItem onClick={() => router.push(`/dashboard/inventory/${selectedItem.id}`)}>
-                                                <Pencil className="mr-2 h-4 w-4" /> Edit Details
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={handleDelete}>
-                                                <Trash2 className="mr-2 h-4 w-4" /> Delete Item
-                                            </DropdownMenuItem>
-                                        </DropdownMenuContent>
-                                    </DropdownMenu>
+                                            <DropdownMenu>
+                                                <DropdownMenuTrigger asChild>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-red-600">
+                                                        <MoreVertical className="h-4 w-4" />
+                                                    </Button>
+                                                </DropdownMenuTrigger>
+                                                <DropdownMenuContent align="start">
+                                                    <DropdownMenuItem onClick={() => router.push(`/dashboard/inventory/${selectedItem.id}`)}>
+                                                        <Pencil className="mr-2 h-4 w-4" /> Edit Details
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem className="text-red-600 focus:text-red-600" onClick={handleDelete}>
+                                                        <Trash2 className="mr-2 h-4 w-4" /> Delete Item
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuContent>
+                                            </DropdownMenu>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1">
+                                            <Badge variant="secondary" className="bg-slate-100 text-slate-600 border-none font-mono text-[10px]">
+                                                {selectedItem.sku || 'NO SKU'}
+                                            </Badge>
+                                            <Badge variant="outline" className="text-blue-600 border-blue-100 bg-blue-50/50 text-[10px]">
+                                                {selectedItem.category || 'General'}
+                                            </Badge>
+                                        </div>
+                                    </div>
                                 </div>
                                 <Button
                                     className="bg-blue-600 hover:bg-blue-700 text-white font-semibold"

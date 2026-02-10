@@ -18,7 +18,7 @@ export async function getInvoiceStats(filters?: { search?: string; startDate?: D
         .select('grand_total, payment_status, date, party_name')
         .eq('tenant_id', profile.tenant_id)
 
-    if (filters?.search) query = query.ilike('party_name', `%${filters.search}%`)
+    if (filters?.search) query = query.or(`party_name.ilike.%${filters.search}%,invoice_number.ilike.%${filters.search}%`)
     if (filters?.startDate) query = query.gte('date', filters.startDate.toISOString())
     if (filters?.endDate) query = query.lte('date', filters.endDate.toISOString())
     if (filters?.status) {
@@ -42,7 +42,18 @@ export async function getInvoiceStats(filters?: { search?: string; startDate?: D
     return { totalSales, received, balance }
 }
 
-export async function getInvoices(page = 1, pageSize = 10, filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
+export async function getInvoices(
+    page = 1,
+    pageSize = 10,
+    filters?: {
+        search?: string;
+        startDate?: Date;
+        endDate?: Date;
+        status?: string;
+        sortBy?: string;
+        sortOrder?: 'asc' | 'desc';
+    }
+) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
@@ -56,17 +67,39 @@ export async function getInvoices(page = 1, pageSize = 10, filters?: { search?: 
         .select('*', { count: 'exact' })
         .eq('tenant_id', profile.tenant_id)
         .range(start, end)
-        .order('date', { ascending: false })
 
+    // Apply Search
     if (filters?.search) {
-        query = query.ilike('party_name', `%${filters.search}%`)
+        query = query.or(`party_name.ilike.%${filters.search}%,invoice_number.ilike.%${filters.search}%`)
     }
 
+    // Apply Date Range
     if (filters?.startDate && filters?.endDate) {
         query = query.gte('date', filters.startDate.toISOString()).lte('date', filters.endDate.toISOString())
     }
 
-    // Status filter if needed, though not explicitly in UI requirement "This Month" covers date.
+    // Apply Status Filter
+    if (filters?.status && filters.status !== 'all') {
+        if (filters.status === 'unpaid') {
+            query = query.neq('payment_status', 'paid')
+        } else {
+            query = query.eq('payment_status', filters.status)
+        }
+    }
+
+    // Apply Sorting
+    const sortField = filters?.sortBy || 'date'
+    const sortAscending = filters?.sortOrder === 'asc'
+
+    if (sortField === 'balance') {
+        // Balance is roughly status + total
+        // For desc: show unpaid first, then by total desc
+        // This is hard to do in a single column sort without a balance field
+        // We'll sort by payment_status then grand_total
+        query = query.order('payment_status', { ascending: !sortAscending }).order('grand_total', { ascending: sortAscending })
+    } else {
+        query = query.order(sortField, { ascending: sortAscending })
+    }
 
     const { data, error, count } = await query
 

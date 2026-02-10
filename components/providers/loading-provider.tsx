@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { FullPageLoader } from "@/components/ui/modern-loader"
+import { AnimatePresence } from "framer-motion"
 
 import { usePathname, useSearchParams } from "next/navigation"
 
@@ -39,7 +40,9 @@ export function LoadingProvider({ children }: { children: React.ReactNode }) {
     return (
         <LoadingContext.Provider value={value}>
             {children}
-            {isLoading && <FullPageLoader />}
+            <AnimatePresence>
+                {isLoading && <FullPageLoader />}
+            </AnimatePresence>
         </LoadingContext.Provider>
     )
 }
