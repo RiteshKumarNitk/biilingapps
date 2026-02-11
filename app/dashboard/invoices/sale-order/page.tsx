@@ -4,11 +4,12 @@ import Link from 'next/link'
 import { getSaleOrders } from '@/actions/sale-orders'
 import { SaleOrderTable } from '@/components/sale-order/sale-order-table'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, Filter, ShoppingBag } from 'lucide-react'
-import { Input } from '@/components/ui/input'
+import { Plus, ShoppingBag } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { parseISO } from 'date-fns'
+import { InvoicesSearch } from '../search'
+import { SaleOrderFilters } from './filters'
 
 interface PageProps {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -16,7 +17,11 @@ interface PageProps {
 
 export default async function SaleOrderPage({ searchParams }: PageProps) {
     const params = await searchParams
-    const search = (params.search as string) || ''
+    const search = typeof params.search === 'string' ? params.search : undefined
+    const status = typeof params.status === 'string' ? params.status : undefined
+    const sortBy = typeof params.sortBy === 'string' ? params.sortBy : undefined
+    const sortOrder = (params.sortOrder === 'asc' || params.sortOrder === 'desc') ? params.sortOrder : undefined
+
     const startDateParam = typeof params.startDate === 'string' ? params.startDate : undefined
     const endDateParam = typeof params.endDate === 'string' ? params.endDate : undefined
 
@@ -25,7 +30,14 @@ export default async function SaleOrderPage({ searchParams }: PageProps) {
     if (startDateParam) startDate = parseISO(startDateParam)
     if (endDateParam) endDate = parseISO(endDateParam)
 
-    const orders = await getSaleOrders(search, { startDate, endDate })
+    const orders = await getSaleOrders(1, 100, {
+        search,
+        startDate,
+        endDate,
+        status,
+        sortBy,
+        sortOrder
+    })
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
@@ -71,22 +83,12 @@ export default async function SaleOrderPage({ searchParams }: PageProps) {
             </div>
 
             {/* Filters & Actions Bar */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        name="search"
-                        placeholder="Search order no or party..."
-                        defaultValue={search}
-                        className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
-                    />
-                </div>
+            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                <InvoicesSearch />
 
                 <div className="flex items-center gap-2">
                     <DatePickerWithRange />
-                    <Button variant="outline" size="icon" className="h-10 w-10 border-slate-200 text-slate-500 hover:text-slate-700">
-                        <Filter className="h-4 w-4" />
-                    </Button>
+                    <SaleOrderFilters />
                 </div>
             </div>
 

@@ -21,7 +21,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select'
-import { createSaleOrder, getNextSaleOrderRef } from '@/actions/sale-orders'
+import { createSaleOrder, getNextSaleOrderRef, updateSaleOrder } from '@/actions/sale-orders'
 import { getProducts } from '@/actions/inventory'
 import { getParties } from '@/actions/parties'
 import { useRouter } from 'next/navigation'
@@ -55,7 +55,12 @@ const saleOrderSchema = z.object({
 
 type SaleOrderFormValues = z.infer<typeof saleOrderSchema>
 
-export function SaleOrderForm() {
+interface SaleOrderFormProps {
+    initialData?: SaleOrderFormValues & { id?: string }
+    orderId?: string
+}
+
+export function SaleOrderForm({ initialData, orderId }: SaleOrderFormProps) {
     const router = useRouter()
     const { showLoader, hideLoader, isLoading } = useLoading()
     const [products, setProducts] = React.useState<any[]>([])
@@ -64,14 +69,18 @@ export function SaleOrderForm() {
     // Load Data
     React.useEffect(() => {
         const load = async () => {
-            const [prods, parts, nextRef] = await Promise.all([
+            const [prods, parts] = await Promise.all([
                 getProducts(1, 100),
-                getParties(),
-                getNextSaleOrderRef()
+                getParties()
             ])
             setProducts(prods.data || [])
             setParties(parts || [])
-            form.setValue('order_number', nextRef)
+
+            // Only fetch next ref if creating new
+            if (!initialData && !orderId) {
+                const nextRef = await getNextSaleOrderRef()
+                form.setValue('order_number', nextRef)
+            }
         }
         load()
     }, [])
@@ -79,8 +88,12 @@ export function SaleOrderForm() {
     const form = useForm<SaleOrderFormValues>({
         resolver: zodResolver(saleOrderSchema) as any,
         defaultValues: {
-            date: new Date(),
-            items: [{ description: '', quantity: 1, unit_price: 0, gst_rate: 0, tax_amount: 0, total_amount: 0 }],
+            order_number: initialData?.order_number || '',
+            party_id: initialData?.party_id || '',
+            notes: initialData?.notes || '',
+            date: initialData?.date ? new Date(initialData.date) : new Date(),
+            due_date: initialData?.due_date ? new Date(initialData.due_date) : undefined,
+            items: initialData?.items || [{ description: '', quantity: 1, unit_price: 0, gst_rate: 0, tax_amount: 0, total_amount: 0 }],
         },
     })
 
@@ -114,12 +127,20 @@ export function SaleOrderForm() {
                 }
             })
 
-            await createSaleOrder({
-                ...data,
-                items: itemsWithTotals
-            })
+            if (orderId) {
+                await updateSaleOrder(orderId, {
+                    ...data,
+                    items: itemsWithTotals
+                })
+                toast.success('Sale Order updated successfully')
+            } else {
+                await createSaleOrder({
+                    ...data,
+                    items: itemsWithTotals
+                })
+                toast.success('Sale Order created successfully')
+            }
 
-            toast.success('Sale Order created successfully')
             router.push('/dashboard/invoices/sale-order')
         } catch (error: any) {
             toast.error(error.message)

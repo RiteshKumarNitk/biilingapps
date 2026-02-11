@@ -195,11 +195,15 @@ export function SaleOrderTable({ data }: SaleOrderTableProps) {
                                                     </Button>
                                                 </DropdownMenuTrigger>
                                                 <DropdownMenuContent align="end">
-                                                    <DropdownMenuItem>
-                                                        <Eye className="mr-2 h-4 w-4" /> View
+                                                    <DropdownMenuItem asChild>
+                                                        <Link href={`/dashboard/invoices/sale-order/${order.id}`} className="cursor-pointer">
+                                                            <Eye className="mr-2 h-4 w-4" /> View Details
+                                                        </Link>
                                                     </DropdownMenuItem>
-                                                    <DropdownMenuItem disabled={isConverted}>
-                                                        <Edit className="mr-2 h-4 w-4" /> Edit
+                                                    <DropdownMenuItem disabled={isConverted} asChild>
+                                                        <Link href={`/dashboard/invoices/sale-order/${order.id}/edit`} className="cursor-pointer">
+                                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                                        </Link>
                                                     </DropdownMenuItem>
                                                     <DropdownMenuItem className="text-red-600" onClick={() => handleDelete(order.id)} disabled={isConverted}>
                                                         <Trash2 className="mr-2 h-4 w-4" /> Delete
