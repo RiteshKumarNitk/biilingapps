@@ -24,7 +24,7 @@
     ],
     "paths": {
       "@/*": [
-        "./*"
+        "./src/*"
       ]
     }
   },
@@ -37,7 +37,6 @@
     "**/*.mts"
   ],
   "exclude": [
-    "node_modules",
-    "supabase"
+    "node_modules"
   ]
 }
