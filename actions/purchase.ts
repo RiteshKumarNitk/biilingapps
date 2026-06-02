@@ -1,89 +1,74 @@
-
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import PartyService from '@/lib/services/party.service'
 
 export async function createPurchaseBill(data: any) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    // Get tenant
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user.id).single()
-    if (!profile) throw new Error('Profile not found')
-
-    // 1. Create Purchase Order (Bill)
-    // Mapping payload to DB Schema
-    // Note: Schema uses 'po_items' and 'purchase_orders'
-    const { data: po, error: poError } = await supabase
-        .from('purchase_orders')
-        .insert({
-            tenant_id: profile.tenant_id,
-            po_number: data.bill_number,
-            party_id: data.party_id, // We need party_id. If name only, we might fail or need lookup.
-            party_name: data.party_name,
-            date: data.date,
-            status: 'received', // Bill implies received?
-            grand_total: data.grand_total,
+    const po = await prisma.purchaseOrder.create({
+        data: {
+            tenantId: user.tenantId,
+            poNumber: data.bill_number,
+            partyId: data.party_id,
+            date: new Date(data.date),
+            status: 'RECEIVED',
+            grandTotal: data.grand_total,
             notes: data.notes
-        })
-        .select()
-        .single()
+        }
+    })
 
-    if (poError) throw new Error(poError.message)
-
-    // 2. Create PO Items
     const items = data.items.map((item: any) => ({
-        tenant_id: profile.tenant_id,
-        po_id: po.id,
-        product_id: item.product_id,
+        tenantId: user.tenantId,
+        poId: po.id,
+        productId: item.product_id,
         description: item.description,
         quantity: item.quantity,
         unit: item.unit,
-        unit_price: item.unit_price,
-        gst_rate: item.gst_rate || 0,
-        tax_amount: item.tax_amount || 0,
+        unitPrice: item.unit_price,
+        gstRate: item.gst_rate || 0,
+        taxAmount: item.tax_amount || 0,
         discount: item.discount || 0,
-        total_amount: item.total_amount,
-        hsn_code: item.hsn_code
+        totalAmount: item.total_amount,
+        hsnCode: item.hsn_code
     }))
 
-    const { error: itemsError } = await supabase.from('po_items').insert(items)
+    await prisma.poItem.createMany({
+        data: items
+    })
 
-    if (itemsError) throw new Error(itemsError.message)
-
-    // 3. Update Stock (Increase)
     for (const item of items) {
-        if (item.product_id) {
-            // Record movement
-            await supabase.from('stock_movements').insert({
-                tenant_id: profile.tenant_id,
-                product_id: item.product_id,
-                type: 'purchase_received',
-                quantity: item.quantity,
-                reference_id: po.id,
-                description: 'Purchase Bill ' + data.bill_number
+        if (item.productId) {
+            await prisma.stockMovement.create({
+                data: {
+                    tenantId: user.tenantId,
+                    productId: item.productId,
+                    type: 'PURCHASE',
+                    quantity: item.quantity,
+                    referenceId: po.id,
+                    notes: 'Purchase Bill ' + data.bill_number
+                }
             })
 
-            // Update Product Stock
-            // Fetch current first to be safe or use increment rpc if available.
-            // Using RPC is better for concurrency, but simple update for now:
-            const { data: currentProd } = await supabase.from('products').select('stock_quantity').eq('id', item.product_id).single()
+            const currentProd = await prisma.product.findUnique({
+                where: { id: item.productId, tenantId: user.tenantId },
+                select: { stockQuantity: true }
+            })
+
             if (currentProd) {
-                await supabase.from('products')
-                    .update({ stock_quantity: currentProd.stock_quantity + item.quantity })
-                    .eq('id', item.product_id)
+                await prisma.product.update({
+                    where: { id: item.productId, tenantId: user.tenantId },
+                    data: { stockQuantity: (currentProd.stockQuantity || 0) + item.quantity }
+                })
             }
         }
     }
 
-    // 4. Update Party Ledger (Payable)
     if (data.party_id) {
         try {
-            const { recalculatePartyBalance } = await import('@/actions/parties')
-            await recalculatePartyBalance(data.party_id)
+            await PartyService.recalculatePartyBalance(data.party_id, user.tenantId)
         } catch (e) {
             console.error("Failed to sync party balance (purchase):", e)
         }
@@ -94,118 +79,108 @@ export async function createPurchaseBill(data: any) {
 }
 
 export async function getPurchaseStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
-    if (!profile) return { total: 0, count: 0 }
+    const user = await requireAuth()
+    
+    const where: any = { tenantId: user.tenantId }
+    if (filters?.startDate) {
+        where.date = { ...where.date, gte: filters.startDate }
+    }
+    if (filters?.endDate) {
+        where.date = { ...where.date, lte: filters.endDate }
+    }
+    if (filters?.status) {
+        where.status = filters.status.toUpperCase()
+    }
+    if (filters?.search) {
+        where.party = { name: { contains: filters.search, mode: 'insensitive' } }
+    }
 
-    let query = supabase.from('purchase_orders')
-        .select('grand_total, status')
-        .eq('tenant_id', profile.tenant_id)
+    const data = await prisma.purchaseOrder.findMany({
+        where,
+        select: { grandTotal: true, status: true }
+    })
 
-    if (filters?.search) query = query.ilike('party_name', `%${filters.search}%`)
-    if (filters?.startDate) query = query.gte('date', filters.startDate.toISOString())
-    if (filters?.endDate) query = query.lte('date', filters.endDate.toISOString())
-    if (filters?.status) query = query.eq('status', filters.status)
-
-    const { data, error } = await query
-
-    if (error || !data) return { total: 0, count: 0 }
-
-    const total = data.reduce((sum, bill) => sum + (bill.grand_total || 0), 0)
+    const total = data.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0)
 
     return { total, count: data.length }
 }
 
 export async function getPurchaseBills(page = 1, pageSize = 10, filters?: { search?: string; startDate?: Date; endDate?: Date }) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
-    if (!profile) return { data: [], total: 0 }
-
+    const user = await requireAuth()
+    
     const start = (page - 1) * pageSize
-    const end = start + pageSize - 1
-
-    let query = supabase
-        .from('purchase_orders')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', profile.tenant_id)
-        .range(start, end)
-        .order('date', { ascending: false })
-
-    if (filters?.search) {
-        query = query.ilike('party_name', `%${filters.search}%`)
-    }
+    const where: any = { tenantId: user.tenantId }
+    
     if (filters?.startDate) {
-        query = query.gte('date', filters.startDate.toISOString())
+        where.date = { ...where.date, gte: filters.startDate }
     }
     if (filters?.endDate) {
-        query = query.lte('date', filters.endDate.toISOString())
+        where.date = { ...where.date, lte: filters.endDate }
+    }
+    if (filters?.search) {
+        where.party = { name: { contains: filters.search, mode: 'insensitive' } }
     }
 
-    const { data, error, count } = await query
+    const [data, total] = await Promise.all([
+        prisma.purchaseOrder.findMany({
+            where,
+            include: { party: { select: { name: true } } },
+            orderBy: { date: 'desc' },
+            skip: start,
+            take: pageSize
+        }),
+        prisma.purchaseOrder.count({ where })
+    ])
 
-    if (error) {
-        console.error('Error fetching purchase bills:', error)
-        throw new Error(error.message)
-    }
-
-    return { data, total: count || 0 }
+    return { data, total }
 }
 
 export async function deletePurchaseBill(id: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const user = await requireAuth()
 
-    // 1. Get PO Details
-    const { data: po, error: poError } = await supabase
-        .from('purchase_orders')
-        .select(`*, po_items(*)`)
-        .eq('id', id)
-        .single()
+    const po = await prisma.purchaseOrder.findUnique({
+        where: { id, tenantId: user.tenantId },
+        include: { poItems: true }
+    })
 
-    if (poError || !po) throw new Error('Purchase Bill not found')
+    if (!po) throw new Error('Purchase Bill not found')
 
-    // 2. Reverse Stock (Decrease)
-    if (po.po_items && po.po_items.length > 0) {
-        for (const item of po.po_items) {
-            if (item.product_id) {
-                const { data: prod } = await supabase
-                    .from('products')
-                    .select('stock_quantity')
-                    .eq('id', item.product_id)
-                    .single()
+    if (po.poItems && po.poItems.length > 0) {
+        for (const item of po.poItems) {
+            if (item.productId) {
+                const prod = await prisma.product.findUnique({
+                    where: { id: item.productId, tenantId: user.tenantId },
+                    select: { stockQuantity: true }
+                })
 
                 if (prod) {
-                    // Decrease stock
-                    await supabase.from('products')
-                        .update({ stock_quantity: Math.max(0, prod.stock_quantity - item.quantity) })
-                        .eq('id', item.product_id)
+                    await prisma.product.update({
+                        where: { id: item.productId, tenantId: user.tenantId },
+                        data: { stockQuantity: Math.max(0, (prod.stockQuantity || 0) - item.quantity) }
+                    })
 
-                    // Record Movement
-                    await supabase.from('stock_movements').insert({
-                        tenant_id: po.tenant_id,
-                        product_id: item.product_id,
-                        type: 'purchase_deleted',
-                        quantity: item.quantity,
-                        reference_id: id,
-                        description: `Purchase Bill ${po.po_number} Deleted`
+                    await prisma.stockMovement.create({
+                        data: {
+                            tenantId: po.tenantId,
+                            productId: item.productId,
+                            type: 'ADJUSTMENT',
+                            quantity: -item.quantity,
+                            referenceId: id,
+                            notes: `Purchase Bill ${po.poNumber} Deleted`
+                        }
                     })
                 }
             }
         }
     }
 
-    // 3. Delete PO
-    const { error: delError } = await supabase.from('purchase_orders').delete().eq('id', id)
-    if (delError) throw new Error(delError.message)
+    await prisma.purchaseOrder.delete({
+        where: { id, tenantId: user.tenantId }
+    })
 
-    // 4. Update Party Balance
-    if (po.party_id) {
+    if (po.partyId) {
         try {
-            const { recalculatePartyBalance } = await import('@/actions/parties')
-            await recalculatePartyBalance(po.party_id)
+            await PartyService.recalculatePartyBalance(po.partyId, user.tenantId)
         } catch (e) {
             console.error("Failed to sync balance after delete:", e)
         }
@@ -217,24 +192,16 @@ export async function deletePurchaseBill(id: string) {
 }
 
 export async function getLastPurchaseBillNumber() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return null
+    const user = await requireAuth()
 
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user.id).single()
-    if (!profile) return null
+    const lastPO = await prisma.purchaseOrder.findFirst({
+        where: { tenantId: user.tenantId },
+        orderBy: { createdAt: 'desc' },
+        select: { poNumber: true }
+    })
 
-    const { data: lastPO } = await supabase
-        .from('purchase_orders')
-        .select('po_number')
-        .eq('tenant_id', profile.tenant_id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single()
-
-    if (lastPO && lastPO.po_number) {
-        // Try to parse number
-        const parts = lastPO.po_number.split('-')
+    if (lastPO && lastPO.poNumber) {
+        const parts = lastPO.poNumber.split('-')
         if (parts.length > 1) {
             const num = parseInt(parts[parts.length - 1])
             if (!isNaN(num)) {
@@ -247,51 +214,23 @@ export async function getLastPurchaseBillNumber() {
 }
 
 export async function getPurchaseBillDetails(id: string) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // 1. Get PO with Party Details
-    const { data: bill, error: billError } = await supabase
-        .from('purchase_orders')
-        .select(`
-            *,
-            parties (
-                name,
-                address,
-                email,
-                phone,
-                gstin,
-                shipping_address,
-                city,
-                state,
-                pincode,
-                pan_number
-            )
-        `)
-        .eq('id', id)
-        .single()
+    const bill = await prisma.purchaseOrder.findUnique({
+        where: { id, tenantId: user.tenantId },
+        include: { party: true }
+    })
 
-    if (billError) throw new Error(billError.message)
+    if (!bill) throw new Error('Purchase Bill not found')
 
-    // 2. Get Items
-    const { data: items, error: itemsError } = await supabase
-        .from('po_items')
-        .select(`
-            *,
-            products (
-                name,
-                hsn_code
-            )
-        `)
-        .eq('po_id', id)
+    const items = await prisma.poItem.findMany({
+        where: { poId: id, tenantId: user.tenantId },
+        include: { product: { select: { name: true, hsnCode: true } } }
+    })
 
-    if (itemsError) throw new Error(itemsError.message)
-
-    // 3. Get Tenant
-    const { data: tenant } = await supabase
-        .from('tenants')
-        .select('*')
-        .eq('id', bill.tenant_id)
-        .single()
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: bill.tenantId }
+    })
 
     return { bill, items, tenant }
 }

@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
 import { updateUserProfile } from "@/actions/user"
 import { Loader2, User } from "lucide-react"
-import { createClient } from "@/utils/supabase/client"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 export function UserProfileForm({ user, profile }: { user: any, profile: any }) {
@@ -27,31 +27,21 @@ export function UserProfileForm({ user, profile }: { user: any, profile: any }) 
 
         try {
             setUploading(true)
-            const supabase = createClient()
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${user.id}-${Date.now()}.${fileExt}`
-            const filePath = `avatars/${fileName}`
+            const formData = new FormData()
+            formData.append('file', file)
 
-            // Ensure bucket exists or reuse company-assets if acceptable, 
-            // but ideally 'avatars' bucket. 
-            // For now let's reuse 'company-assets' to avoid creating another bucket 
-            // if not strictly necessary, OR we assume 'avatars' bucket exists in production.
-            // Let's use 'company-assets' for now as we just created it.
-            const bucketName = 'company-assets'
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
 
-            const { error: uploadError } = await supabase.storage
-                .from(bucketName)
-                .upload(filePath, file)
-
-            if (uploadError) {
-                throw uploadError
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Upload failed')
             }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from(bucketName)
-                .getPublicUrl(filePath)
-
-            setFormData(prev => ({ ...prev, avatar_url: publicUrl }))
+            const data = await res.json()
+            setFormData(prev => ({ ...prev, avatar_url: data.url }))
             toast.success("Avatar uploaded successfully")
         } catch (error: any) {
             toast.error("Error uploading avatar")

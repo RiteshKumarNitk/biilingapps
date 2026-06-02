@@ -1,44 +1,28 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 export async function updateInvoiceSettings(settings: any) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const user = await requireAuth()
 
-    if (!user) throw new Error('Unauthorized')
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: user.tenantId },
+        select: { settings: true }
+    })
 
-    // Get tenant ID
-    const { data: profile } = await supabase
-        .from('users_profile')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single()
+    const currentSettings = (tenant?.settings as Record<string, any>) || {}
 
-    if (!profile?.tenant_id) throw new Error('Tenant not found')
-
-    // Fetch current settings to merge
-    const { data: tenant } = await supabase
-        .from('tenants')
-        .select('settings')
-        .eq('id', profile.tenant_id)
-        .single()
-
-    const currentSettings = tenant?.settings || {}
-
-    // Update with new settings merged
-    const { error } = await supabase
-        .from('tenants')
-        .update({
+    await prisma.tenant.update({
+        where: { id: user.tenantId },
+        data: {
             settings: {
                 ...currentSettings,
                 ...settings
             }
-        })
-        .eq('id', profile.tenant_id)
-
-    if (error) throw new Error(error.message)
+        }
+    })
 
     revalidatePath('/dashboard')
     return { success: true }

@@ -24,7 +24,6 @@ import {
     Trash2,
     Loader2
 } from 'lucide-react'
-import { createClient } from '@/utils/supabase/client'
 
 
 
@@ -154,25 +153,21 @@ export function ProductForm({ initialData, productId }: ProductFormProps) {
 
         try {
             setUploading(true)
-            const supabase = createClient()
-            const fileExt = file.name.split('.').pop()
-            const fileName = `product-${Date.now()}.${fileExt}`
-            const filePath = `products/${fileName}`
+            const formData = new FormData()
+            formData.append('file', file)
 
-            // Use company-assets bucket
-            const { error: uploadError } = await supabase.storage
-                .from('company-assets')
-                .upload(filePath, file)
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
 
-            if (uploadError) {
-                throw uploadError
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Upload failed')
             }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('company-assets')
-                .getPublicUrl(filePath)
-
-            setValue('image_url', publicUrl)
+            const data = await res.json()
+            setValue('image_url', data.url)
             toast.success("Image uploaded")
         } catch (error: any) {
             toast.error("Upload failed")

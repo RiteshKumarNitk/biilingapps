@@ -1,121 +1,97 @@
-
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { productSchema, ProductFormValues } from '@/lib/schemas/product'
 import { revalidatePath } from 'next/cache'
 
 export async function getProducts(page = 1, pageSize = 10, search = '') {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
-    if (!profile) return { data: [], count: 0 }
-
+    const user = await requireAuth()
     const start = (page - 1) * pageSize
-    const end = start + pageSize - 1
 
-    let query = supabase
-        .from('products')
-        .select('*', { count: 'exact' })
-        .eq('tenant_id', profile.tenant_id)
-        .range(start, end)
-        .order('created_at', { ascending: false })
-
+    const where: any = { tenantId: user.tenantId }
     if (search) {
-        query = query.ilike('name', `%${search}%`)
+        where.name = { contains: search, mode: 'insensitive' }
     }
 
-    const { data, error, count } = await query
-
-    if (error) {
-        throw new Error(error.message)
-    }
+    const [data, count] = await Promise.all([
+        prisma.product.findMany({
+            where,
+            skip: start,
+            take: pageSize,
+            orderBy: { createdAt: 'desc' }
+        }),
+        prisma.product.count({ where })
+    ])
 
     return { data, count }
 }
 
 export async function createProduct(data: ProductFormValues) {
-    const supabase = await createClient()
+    const user = await requireAuth()
     const validated = productSchema.parse(data)
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
-
-    // Get tenant_id from profile
-    const { data: profile } = await supabase
-        .from('users_profile')
-        .select('tenant_id')
-        .eq('id', user.id)
-        .single()
-
-    if (!profile) throw new Error('Profile not found')
-
-    const { error } = await supabase.from('products').insert({
-        ...validated,
-        tenant_id: profile.tenant_id,
+    await prisma.product.create({
+        data: {
+            ...validated as any,
+            tenantId: user.tenantId,
+        }
     })
-
-    if (error) throw new Error(error.message)
 
     revalidatePath('/dashboard/inventory')
 }
 
 export async function updateProduct(id: string, data: ProductFormValues) {
-    const supabase = await createClient()
+    const user = await requireAuth()
     const validated = productSchema.parse(data)
 
-    const { error } = await supabase
-        .from('products')
-        .update(validated)
-        .eq('id', id)
-
-    if (error) throw new Error(error.message)
+    await prisma.product.updateMany({
+        where: { id, tenantId: user.tenantId },
+        data: validated as any
+    })
 
     revalidatePath('/dashboard/inventory')
 }
 
 export async function deleteProduct(id: string) {
-    const supabase = await createClient()
-    const { error } = await supabase.from('products').delete().eq('id', id)
-
-    if (error) throw new Error(error.message)
+    const user = await requireAuth()
+    await prisma.product.deleteMany({
+        where: { id, tenantId: user.tenantId }
+    })
 
     revalidatePath('/dashboard/inventory')
 }
 
 export async function getInventoryStats() {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users_profile').select('tenant_id').eq('id', user?.id).single()
-    if (!profile) return { totalStockValue: 0, totalStockQty: 0 }
+    const user = await requireAuth()
 
-    const { data: products } = await supabase.from('products')
-        .select('stock_quantity, price, cost_price, type')
-        .eq('tenant_id', profile.tenant_id)
-
-    if (!products) return { totalStockValue: 0, totalStockQty: 0, lowStockCount: 0 }
+    const products = await prisma.product.findMany({
+        where: { tenantId: user.tenantId },
+        select: { stockQuantity: true, costPrice: true, type: true }
+    })
 
     const totalStockValue = products.reduce((acc, p) => {
         if (p.type === 'service') return acc
-        return acc + (p.stock_quantity * (p.cost_price || 0))
+        return acc + ((p.stockQuantity || 0) * (p.costPrice || 0))
     }, 0)
 
     const totalStockQty = products.reduce((acc, p) => {
         if (p.type === 'service') return acc
-        return acc + (p.stock_quantity || 0)
+        return acc + (p.stockQuantity || 0)
     }, 0)
 
     return { totalStockValue, totalStockQty }
 }
 
 export async function getCategories() {
-    const supabase = await createClient()
-    const { data } = await supabase.from('products').select('category, id')
+    const user = await requireAuth()
+    const products = await prisma.product.findMany({
+        where: { tenantId: user.tenantId },
+        select: { category: true }
+    })
 
     const categoryMap = new Map<string, number>()
-    const uncategorizedCount = 0
-
-    data?.forEach(p => {
+    products.forEach(p => {
         const cat = p.category || 'Uncategorized'
         categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
     })
@@ -124,88 +100,84 @@ export async function getCategories() {
 }
 
 export async function getUnits() {
-    const supabase = await createClient()
-    const { data } = await supabase.from('products').select('unit').not('unit', 'is', null)
+    const user = await requireAuth()
+    const products = await prisma.product.findMany({
+        where: { tenantId: user.tenantId, unit: { not: null } },
+        select: { unit: true }
+    })
 
-    // Get unique units
-    const units = Array.from(new Set(data?.map(p => p.unit) || []))
-    return units.map(u => ({ name: u, symbol: u, decimal: true })) // detailed mock
+    const units = Array.from(new Set(products.map(p => p.unit).filter(Boolean) as string[]))
+    return units.map(u => ({ name: u, symbol: u, decimal: true }))
 }
 
 export async function getProductTransactions(productId: string) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // We fetch checks from stock_movements for products
-    // For services, we might need to check invoice_items mainly (since no stock movement)
-
-    // 1. Stock Movements (Purchase, Sales, Adjustments)
-    const { data: movements } = await supabase
-        .from('stock_movements')
-        .select('*')
-        .eq('product_id', productId)
-        .order('created_at', { ascending: false })
-
-    // 2. We can also fetch Invoice Items and PO Items to get "Party Name" if reference_id links to them
-    // This is a bit complex without joins, but we'll try to do a basic enrichment if possible.
-    // For now, let's return movements as the primary source.
+    const movements = await prisma.stockMovement.findMany({
+        where: { productId, tenantId: user.tenantId },
+        orderBy: { createdAt: 'desc' }
+    })
 
     return movements
 }
 
 export async function bulkUpdateCategory(productIds: string[], newCategory: string) {
-    const supabase = await createClient()
-    const { error } = await supabase
-        .from('products')
-        .update({ category: newCategory })
-        .in('id', productIds)
+    const user = await requireAuth()
+    
+    await prisma.product.updateMany({
+        where: { id: { in: productIds }, tenantId: user.tenantId },
+        data: { category: newCategory }
+    })
 
-    if (error) throw new Error(error.message)
     revalidatePath('/dashboard/inventory')
 }
 
 export async function adjustStock(productId: string, quantity: number, type: 'ADD' | 'REDUCE', reason: string, remarks?: string, date?: Date) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // 1. Get current stock
-    const { data: product } = await supabase.from('products').select('stock_quantity').eq('id', productId).single()
+    const product = await prisma.product.findUnique({
+        where: { id: productId, tenantId: user.tenantId }
+    })
     if (!product) throw new Error('Product not found')
 
     const newStock = type === 'ADD'
-        ? product.stock_quantity + quantity
-        : product.stock_quantity - quantity
+        ? (product.stockQuantity || 0) + quantity
+        : (product.stockQuantity || 0) - quantity
 
-    // 2. Update Product Stock
-    const { error: updateError } = await supabase
-        .from('products')
-        .update({ stock_quantity: newStock })
-        .eq('id', productId)
-
-    if (updateError) throw new Error(updateError.message)
-
-    // 3. Record Movement
-    const { error: moveError } = await supabase.from('stock_movements').insert({
-        product_id: productId,
-        type: type === 'ADD' ? 'ADJUSTMENT_ADD' : 'ADJUSTMENT_REDUCE',
-        quantity: quantity,
-        description: `Stock Adjustment: ${reason} - ${remarks || ''}`,
-        created_at: date ? date.toISOString() : new Date().toISOString()
-    })
-
-    if (moveError) console.error("Failed to record movement", moveError)
+    await prisma.$transaction([
+        prisma.product.update({
+            where: { id: productId, tenantId: user.tenantId },
+            data: { stockQuantity: newStock }
+        }),
+        prisma.stockMovement.create({
+            data: {
+                tenantId: user.tenantId,
+                productId,
+                type: type === 'ADD' ? 'ADJUSTMENT' : 'ADJUSTMENT', // Can refine this
+                quantity: type === 'ADD' ? quantity : -quantity,
+                notes: `Stock Adjustment: ${reason} - ${remarks || ''}`,
+                createdAt: date || new Date()
+            }
+        })
+    ])
 
     revalidatePath('/dashboard/inventory')
 }
 
 export async function getAdjustmentHistory() {
-    const supabase = await createClient()
-    const { data } = await supabase
-        .from('stock_movements')
-        .select('*, products(name)')
-        .in('type', ['ADJUSTMENT_ADD', 'ADJUSTMENT_REDUCE'])
-        .order('created_at', { ascending: false })
-        .limit(50)
+    const user = await requireAuth()
+    
+    const movements = await prisma.stockMovement.findMany({
+        where: { 
+            tenantId: user.tenantId,
+            type: 'ADJUSTMENT'
+        },
+        include: { product: { select: { name: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 50
+    })
 
-    return data
+    return movements
 }
 
 export type BulkUpdateItem = {
@@ -214,20 +186,17 @@ export type BulkUpdateItem = {
 }
 
 export async function bulkUpdateProducts(updates: BulkUpdateItem[]) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // Process in parallel (limit generic concurrency if needed, but for <100 ok)
     const promises = updates.map(item => {
         const { id, ...rest } = item
-        return supabase.from('products').update(rest).eq('id', id)
+        return prisma.product.updateMany({
+            where: { id, tenantId: user.tenantId },
+            data: rest as any
+        })
     })
 
-    const results = await Promise.all(promises)
-    const errors = results.filter(r => r.error)
-
-    if (errors.length > 0) {
-        throw new Error(`Failed to update ${errors.length} items`)
-    }
+    await Promise.all(promises)
 
     revalidatePath('/dashboard/inventory')
     revalidatePath('/dashboard/utilities/bulk-gst')
@@ -242,87 +211,80 @@ export type BulkStockUpdate = {
 }
 
 export async function bulkAdjustStock(updates: BulkStockUpdate[]) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
     const promises = updates.map(async (item) => {
         const { id, current_stock, adjustment_type, quantity, reason } = item
-
-        if (quantity <= 0) return // Skip 0 changes
+        if (quantity <= 0) return
 
         const newStock = adjustment_type === 'ADD'
             ? current_stock + quantity
             : current_stock - quantity
 
-        // Update product
-        const { error: pError } = await supabase.from('products').update({ stock_quantity: newStock }).eq('id', id)
-        if (pError) return { error: pError }
-
-        // Record movement
-        const { error: mError } = await supabase.from('stock_movements').insert({
-            product_id: id,
-            type: adjustment_type === 'ADD' ? 'ADJUSTMENT_ADD' : 'ADJUSTMENT_REDUCE',
-            quantity: quantity,
-            description: `Bulk Adjustment: ${reason}`,
-            created_at: new Date().toISOString()
-        })
-        return { error: mError }
+        return prisma.$transaction([
+            prisma.product.update({
+                where: { id, tenantId: user.tenantId },
+                data: { stockQuantity: newStock }
+            }),
+            prisma.stockMovement.create({
+                data: {
+                    tenantId: user.tenantId,
+                    productId: id,
+                    type: 'ADJUSTMENT',
+                    quantity: adjustment_type === 'ADD' ? quantity : -quantity,
+                    notes: `Bulk Adjustment: ${reason}`
+                }
+            })
+        ])
     })
 
-    const results = await Promise.all(promises)
-    const errors = results.filter(r => r?.error)
-
-    if (errors.length > 0) {
-        throw new Error(`Failed to update stock for some items`)
-    }
+    await Promise.all(promises)
 
     revalidatePath('/dashboard/inventory')
     revalidatePath('/dashboard/utilities/bulk-gst')
 }
 
 export async function renameCategory(oldName: string, newName: string) {
-    const supabase = await createClient()
-    const { error } = await supabase
-        .from('products')
-        .update({ category: newName })
-        .eq('category', oldName)
+    const user = await requireAuth()
+    
+    await prisma.product.updateMany({
+        where: { category: oldName, tenantId: user.tenantId },
+        data: { category: newName }
+    })
 
-    if (error) throw new Error(error.message)
     revalidatePath('/dashboard/inventory')
 }
 
 export async function deleteCategory(name: string) {
-    // We treat "delete" as "uncategorize" to be safe, or we could delete items?
-    // User request "delete if not required". Usually means delete the category label.
-    // So we set items to "General" or null.
-    const supabase = await createClient()
-    const { error } = await supabase
-        .from('products')
-        .update({ category: 'General' })
-        .eq('category', name)
+    const user = await requireAuth()
+    
+    await prisma.product.updateMany({
+        where: { category: name, tenantId: user.tenantId },
+        data: { category: 'General' }
+    })
 
-    if (error) throw new Error(error.message)
     revalidatePath('/dashboard/inventory')
 }
 
 export async function renameUnit(oldName: string, newName: string) {
-    const supabase = await createClient()
-    const { error } = await supabase
-        .from('products')
-        .update({ unit: newName })
-        .eq('unit', oldName)
+    const user = await requireAuth()
+    
+    await prisma.product.updateMany({
+        where: { unit: oldName, tenantId: user.tenantId },
+        data: { unit: newName }
+    })
 
-    if (error) throw new Error(error.message)
     revalidatePath('/dashboard/inventory')
 }
 
 export async function deleteUnit(name: string) {
-    // Revert to 'pcs' or default
-    const supabase = await createClient()
-    const { error } = await supabase
-        .from('products')
-        .update({ unit: 'pcs' })
-        .eq('unit', name)
+    const user = await requireAuth()
+    
+    await prisma.product.updateMany({
+        where: { unit: name, tenantId: user.tenantId },
+        data: { unit: 'pcs' }
+    })
 
-    if (error) throw new Error(error.message)
     revalidatePath('/dashboard/inventory')
 }
+

@@ -1,7 +1,7 @@
 import { UsersProfile } from '@prisma/client'
 import { compare, hash } from 'bcryptjs'
 import { prisma } from './prisma'
-import { createTokenPair, JwtPayload, verifyAccessToken, verifyRefreshToken } from './jwt'
+import { JWTPayload, verifyAccessToken, verifyRefreshToken, signAccessToken, signRefreshToken } from './jwt'
 
 // Auth Service Class
 export class AuthService {
@@ -67,7 +67,7 @@ export class AuthService {
     })
 
     // Generate tokens
-    const payload: JwtPayload = {
+    const payload: JWTPayload = {
       userId: result.userProfile.id,
       tenantId: result.tenant.id,
       role: result.userProfile.role,
@@ -75,7 +75,9 @@ export class AuthService {
       fullName: result.userProfile.fullName
     }
 
-    const tokens = createTokenPair(payload)
+    const accessToken = await signAccessToken(payload)
+    const refreshToken = await signRefreshToken({ userId: result.userProfile.id })
+    const tokens = { accessToken, refreshToken }
 
     return {
       user: {
@@ -110,7 +112,7 @@ export class AuthService {
     }
 
     // Generate tokens
-    const payload: JwtPayload = {
+    const payload: JWTPayload = {
       userId: user.id,
       tenantId: user.tenantId,
       role: user.role,
@@ -118,7 +120,9 @@ export class AuthService {
       fullName: user.fullName
     }
 
-    const tokens = createTokenPair(payload)
+    const accessToken = await signAccessToken(payload)
+    const refreshToken = await signRefreshToken({ userId: user.id })
+    const tokens = { accessToken, refreshToken }
 
     return {
       user: {
@@ -147,7 +151,7 @@ export class AuthService {
    * Get current user from access token
    */
   static async getCurrentUser(token: string) {
-    const payload = verifyAccessToken(token)
+    const payload = await verifyAccessToken(token)
     if (!payload) {
       throw new Error('Invalid or expired token')
     }
@@ -179,7 +183,7 @@ export class AuthService {
    * Refresh access token
    */
   static async refreshToken(refreshToken: string) {
-    const payload = verifyRefreshToken(refreshToken)
+    const payload = await verifyRefreshToken(refreshToken)
     if (!payload) {
       throw new Error('Invalid or expired refresh token')
     }
@@ -195,7 +199,7 @@ export class AuthService {
     }
 
     // Generate new token pair
-    const newPayload: JwtPayload = {
+    const newPayload: JWTPayload = {
       userId: user.id,
       tenantId: user.tenantId,
       role: user.role,
@@ -203,7 +207,9 @@ export class AuthService {
       fullName: user.fullName
     }
 
-    const tokens = createTokenPair(newPayload)
+    const accessToken = await signAccessToken(newPayload)
+    const newRefreshToken = await signRefreshToken({ userId: user.id })
+    const tokens = { accessToken, refreshToken: newRefreshToken }
 
     return {
       user: {

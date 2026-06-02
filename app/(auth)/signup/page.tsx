@@ -4,7 +4,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/utils/supabase/client'
+
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -26,32 +26,34 @@ export default function SignupPage() {
     const [password, setPassword] = React.useState('')
     const { showLoader, hideLoader, isLoading } = useLoading()
     const router = useRouter()
-    const supabase = createClient()
 
     const handleSignup = async (e: React.FormEvent) => {
         e.preventDefault()
         showLoader()
 
-        // Sign up with extra metadata for the trigger to handle
-        const { error } = await supabase.auth.signUp({
-            email,
-            password,
-            options: {
-                data: {
-                    full_name: fullName,
-                    business_name: businessName,
-                },
-            },
-        })
+        try {
+            const res = await fetch('/api/auth/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    email,
+                    password,
+                    businessName,
+                    fullName
+                })
+            })
 
-        if (error) {
-            toast.error(error.message)
-            hideLoader()
-        } else {
-            // If email confirmation is enabled, we should show a message. 
-            // For simplicity assuming auto-confirm or user awareness.
+            if (!res.ok) {
+                const data = await res.json()
+                throw new Error(data.error || 'Registration failed')
+            }
+
             toast.success('Account created! You can now log in.')
             router.push('/login')
+        } catch (error: any) {
+            toast.error(error.message)
+        } finally {
+            hideLoader()
         }
     }
 

@@ -1,7 +1,7 @@
-
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -14,58 +14,52 @@ const expenseSchema = z.object({
 })
 
 export async function createExpense(data: any) {
-    const supabase = await createClient()
+    const user = await requireAuth()
     const validated = expenseSchema.parse(data)
 
-    // Get tenant_id for manual insertion if needed, though RLS/Triggers usually handle it.
-    // Ideally we should trust the trigger, but let's just insert the data we have.
-    // We map 'description' to 'notes' and include paymentMode in notes.
-
-    const { error } = await supabase.from('expenses').insert({
-        category: validated.category,
-        amount: validated.amount,
-        date: validated.date,
-        notes: `[${validated.paymentMode}] ${validated.description || ''}`,
-        // tenant_id: tenantData // Trigger should handle this
+    await prisma.expense.create({
+        data: {
+            tenantId: user.tenantId,
+            category: validated.category,
+            amount: validated.amount,
+            date: new Date(validated.date),
+            notes: `[${validated.paymentMode}] ${validated.description || ''}`,
+        }
     })
-
-    if (error) {
-        console.error('Expense Create Error:', error)
-        throw new Error('Failed to create expense')
-    }
 
     revalidatePath('/dashboard/accounting')
 }
 
 export async function getExpenses() {
-    const supabase = await createClient()
-    const { data, error } = await supabase
-        .from('expenses')
-        .select('*')
-        .order('date', { ascending: false })
+    const user = await requireAuth()
+    const data = await prisma.expense.findMany({
+        where: { tenantId: user.tenantId },
+        orderBy: { date: 'desc' }
+    })
 
-    if (error) throw new Error(error.message)
     return data
 }
 
 export async function getCashbook() {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // Combine Payments (In/Out) and Expenses (Out)
-    // This is a simplified ledger view.
-
-    const { data: payments } = await supabase.from('payments').select('*')
-    const { data: expenses } = await supabase.from('expenses').select('*')
+    const payments = await prisma.payment.findMany({
+        where: { tenantId: user.tenantId }
+    })
+    
+    const expenses = await prisma.expense.findMany({
+        where: { tenantId: user.tenantId }
+    })
 
     const cashbook = [
-        ...(payments || []).map((p: any) => ({
+        ...payments.map((p: any) => ({
             id: p.id,
-            date: p.date,
-            description: `Payment ${p.type === 'in' ? 'Received' : 'Made'} - ${p.notes || ''}`,
-            type: p.type === 'in' ? 'credit' : 'debit',
-            amount: p.amount
+            date: p.createdAt, // Assumed payments use createdAt
+            description: `Payment Received/Made - ${p.notes || ''}`,
+            type: p.amount > 0 ? 'credit' : 'debit',
+            amount: Math.abs(p.amount)
         })),
-        ...(expenses || []).map((e: any) => ({
+        ...expenses.map((e: any) => ({
             id: e.id,
             date: e.date,
             description: `Expense: ${e.category} - ${e.notes || ''}`,

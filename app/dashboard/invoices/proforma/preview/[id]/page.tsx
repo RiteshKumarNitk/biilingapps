@@ -1,6 +1,7 @@
 
 import { InvoiceData } from '@/lib/invoice-engine/types'
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import { InvoicePreviewWrapper } from '@/components/invoice-engine/invoice-preview-wrapper'
 
@@ -10,60 +11,57 @@ interface PageProps {
     }
 }
 
-// Function to map DB data to InvoiceData prop
 async function getProformaData(id: string): Promise<InvoiceData> {
-    const supabase = await createClient()
-    const { data: q, error } = await supabase
-        .from('quotations')
-        .select(`*, items:quotation_items(*)`)
-        .eq('id', id)
-        .single()
+    const user = await requireAuth()
 
-    if (error || !q) throw new Error('Document not found')
+    const q = await prisma.quotation.findUnique({
+        where: { id, tenantId: user.tenantId },
+        include: { items: true }
+    })
 
-    // Also fetch company profile for logo/address (User Profile or Settings table)
-    const { data: { user } } = await supabase.auth.getUser()
-    const { data: profile } = await supabase.from('users_profile').select('*').eq('id', user?.id).single()
+    if (!q) throw new Error('Document not found')
+
+    const tenant = await prisma.tenant.findUnique({
+        where: { id: user.tenantId }
+    })
 
     // Map to InvoiceData
     return {
         id: q.id,
         documentTitle: q.type === 'proforma' ? 'Proforma Invoice' : 'Estimate / Quotation',
-        documentNumber: q.quotation_number,
+        documentNumber: q.quotationNumber,
         date: new Date(q.date).toLocaleDateString('en-IN'),
-        dueDate: q.valid_until ? new Date(q.valid_until).toLocaleDateString('en-IN') : undefined,
+        dueDate: q.validUntil ? new Date(q.validUntil).toLocaleDateString('en-IN') : undefined,
 
         company: {
-            name: profile?.business_name || 'My Business',
-            address: profile?.address || 'Business Address',
-            phone: profile?.phone_number || '',
-            email: profile?.email || user?.email,
-            gstin: profile?.gstin || '',
-            // logoUrl: profile?.logo_url --- assume none for now or hook up later
+            name: tenant?.name || 'My Business',
+            address: tenant?.address || 'Business Address',
+            phone: tenant?.phone || '',
+            email: tenant?.email || user?.email,
+            gstin: tenant?.gstin || '',
         },
         billTo: {
-            name: q.party_name || 'Cash Sale',
-            address: 'Address Line 1\nCity, State', // Needs Party Table fetch ideally
-            // We only stored party_name in basic schema. In real app, fetch Party details by party_id
+            name: q.partyName || 'Cash Sale',
+            address: q.partyAddress || 'Address Line 1\nCity, State',
         },
         items: q.items.map((i: any, idx: number) => ({
             id: i.id,
-            name: i.description, // using description as name for now based on schema
+            name: i.description,
             quantity: Number(i.quantity),
-            unit: 'PCS', // Schema doesn't have unit yet, default/mock
-            rate: Number(i.unit_price),
-            tax_amount: Number(i.tax_amount),
-            gst_rate: Number(i.gst_rate),
-            amount: Number(i.total_amount),
-            hsn: '8471' // Mock
+            unit: 'PCS',
+            rate: Number(i.unitPrice),
+            tax_amount: Number(i.taxAmount),
+            gst_rate: Number(i.gstRate),
+            amount: Number(i.totalAmount),
+            hsn: '8471'
         })),
         subTotal: Number(q.subtotal),
-        discountTotal: Number(q.discount_amount),
-        taxTotal: Number(q.total_gst),
-        grandTotal: Number(q.grand_total),
-        notes: q.notes,
+        discountTotal: Number(q.discountAmount),
+        taxTotal: Number(q.totalGst),
+        grandTotal: Number(q.grandTotal),
+        notes: q.notes || '',
         showGstColumns: true,
-        amountInWords: 'Twenty Five Thousand Rupees only', // Mock for demo, use number-to-words lib later
+        amountInWords: 'Amount in words not implemented',
     }
 }
 

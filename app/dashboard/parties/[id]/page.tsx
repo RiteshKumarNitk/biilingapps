@@ -1,6 +1,6 @@
-
 import { getPartyLedger } from '@/actions/parties'
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { notFound } from 'next/navigation'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { format } from 'date-fns'
@@ -12,8 +12,11 @@ export default async function PartyLedgerPage({
     params: Promise<{ id: string }>
 }) {
     const { id } = await params;
-    const supabase = await createClient()
-    const { data: party } = await supabase.from('parties').select('*').eq('id', id).single()
+    const user = await requireAuth()
+
+    const party = await prisma.party.findUnique({
+        where: { id, tenantId: user.tenantId }
+    })
 
     if (!party) notFound()
 
@@ -27,9 +30,9 @@ export default async function PartyLedgerPage({
                     <p className="text-muted-foreground">{party.type.toUpperCase()}</p>
                 </div>
                 <div className="text-right">
-                    <h3 className="text-xl font-bold">Balance: ₹{Math.abs(party.current_balance)}</h3>
-                    <span className={party.current_balance < 0 ? 'text-red-500' : 'text-green-500'}>
-                        {party.current_balance < 0 ? 'To Pay' : 'To Receive'}
+                    <h3 className="text-xl font-bold">Balance: ₹{Math.abs(party.currentBalance)}</h3>
+                    <span className={party.currentBalance < 0 ? 'text-red-500' : 'text-green-500'}>
+                        {party.currentBalance < 0 ? 'To Pay' : 'To Receive'}
                     </span>
                 </div>
             </div>
@@ -52,11 +55,11 @@ export default async function PartyLedgerPage({
                         <TableBody>
                             {ledger.map((entry: any, i) => (
                                 <TableRow key={i}>
-                                    <TableCell>{format(new Date(entry.date || entry.created_at), 'dd MMM yyyy')}</TableCell>
-                                    <TableCell>{entry.type === 'invoice' ? `Invoice #${entry.invoice_number}` : `Payment ${entry.mode}`}</TableCell>
+                                    <TableCell>{format(new Date(entry.date || entry.createdAt || entry.created_at), 'dd MMM yyyy')}</TableCell>
+                                    <TableCell>{entry.type === 'invoice' || entry.type === 'purchase' ? `Invoice #${entry.invoiceNumber || entry.invoice_number}` : `Payment ${entry.mode}`}</TableCell>
                                     <TableCell className="capitalize">{entry.type}</TableCell>
                                     <TableCell className="text-right">
-                                        {entry.type === 'invoice' ? `₹${entry.grand_total}` : '-'}
+                                        {entry.type === 'invoice' || entry.type === 'purchase' ? `₹${entry.grandTotal || entry.grand_total}` : '-'}
                                     </TableCell>
                                     <TableCell className="text-right">
                                         {entry.type === 'payment' ? `₹${entry.amount}` : '-'}

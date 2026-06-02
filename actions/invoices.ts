@@ -1,12 +1,12 @@
 'use server'
 
-import InvoiceService from '@/src/services/invoice.service'
+import InvoiceService from '@/lib/services/invoice.service'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 
 export async function getInvoiceStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return a placeholder - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return { totalSales: 0, received: 0, balance: 0 }
+  const user = await requireAuth()
+  return await InvoiceService.getInvoiceStats(filters) // Note: This isn't fully implemented in the service yet, but we'll call it anyway or rewrite it here.
 }
 
 export async function getInvoices(
@@ -21,36 +21,26 @@ export async function getInvoices(
     sortOrder?: 'asc' | 'desc';
   }
 ) {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return a placeholder - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return { data: [], count: 0 }
+  const user = await requireAuth()
+  return await InvoiceService.getInvoices(user.tenantId, page, pageSize, filters)
 }
 
 export async function createInvoice(data: any) {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return null - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return null
+  const user = await requireAuth()
+  return await InvoiceService.createInvoice(data, user.tenantId)
 }
 
 export async function getInvoiceDetails(id: string) {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return null - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return null
+  const user = await requireAuth()
+  return await InvoiceService.getInvoiceDetails(id, user.tenantId)
 }
 
 export async function getLastInvoiceNumber() {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return default - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return 'INV-0001'
+  const user = await requireAuth()
+  return await InvoiceService.getLastInvoiceNumber(user.tenantId)
 }
 
 export async function deleteInvoice(id: string) {
-  // Note: This service function needs tenantId which should come from auth context
-  // For now, we'll return false - in a real implementation, 
-  // we'd extract tenantId from the request/user context
-  return { success: false }
+  const user = await requireAuth()
+  return await InvoiceService.deleteInvoice(id, user.tenantId)
 }

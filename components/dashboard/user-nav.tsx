@@ -17,15 +17,13 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Button } from '@/components/ui/button'
-import { createClient } from '@/utils/supabase/client'
+import { logout } from '@/actions/auth'
 import { useRouter } from 'next/navigation'
 
 export function UserNav({ user, profile }: { user?: any; profile?: any }) {
     const router = useRouter()
-    const supabase = createClient()
-
     const handleSignOut = async () => {
-        await supabase.auth.signOut()
+        await logout()
         router.refresh()
         router.push('/login')
     }

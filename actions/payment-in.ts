@@ -1,7 +1,9 @@
 'use server'
 
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import PartyService from '@/lib/services/party.service'
 
 export type PaymentIn = {
     id: string
@@ -22,78 +24,46 @@ export type PaymentFilter = {
 }
 
 export async function getPayments(filter: PaymentFilter) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    let query = supabase
-        .from('payments')
-        .select(`
-            id,
-            created_at,
-            amount,
-            mode,
-            transaction_ref,
-            notes,
-            party_id,
-            invoices (
-                invoice_number
-            ),
-            parties (
-                name
-            )
-        `)
-        .order('created_at', { ascending: false })
-
-    // Apply filters
+    const where: any = { tenantId: user.tenantId }
+    
     if (filter.start) {
-        query = query.gte('created_at', filter.start.toISOString())
+        where.createdAt = { ...where.createdAt, gte: filter.start }
     }
     if (filter.end) {
-        // Set end date to end of day
         const endDate = new Date(filter.end)
         endDate.setHours(23, 59, 59, 999)
-        query = query.lte('created_at', endDate.toISOString())
+        where.createdAt = { ...where.createdAt, lte: endDate }
     }
-
-    // Note: Search would require joining party name which is harder in Supabase simple query relying on foreign table filter
-    // For now we will filter in memory or minimal search on transaction_ref
+    
     if (filter.search) {
-        // Try to search transaction ref or notes
-        query = query.ilike('transaction_ref', `%${filter.search}%`)
+        const search = filter.search
+        where.OR = [
+            { transactionRef: { contains: search, mode: 'insensitive' } },
+            { party: { name: { contains: search, mode: 'insensitive' } } }
+        ]
     }
 
-    const { data: rawData, error } = await query
+    const rawData = await prisma.payment.findMany({
+        where,
+        include: { party: { select: { name: true } }, invoice: { select: { invoiceNumber: true } } },
+        orderBy: { createdAt: 'desc' }
+    })
 
-    if (error) {
-        console.error('Error fetching payments:', error)
-        return { payments: [], summary: { total: 0, count: 0 } }
-    }
-
-    // Process data to map to PaymentIn type and handle Party search manually if needed
-    // The query returns parties(name), we need to flatten it
-    let payments = rawData.map((item: any) => ({
+    const payments = rawData.map((item: any) => ({
         id: item.id,
-        // We prefer 'date' column if it existed, but fallback to created_at
-        date: item.created_at,
-        payment_number: item.transaction_ref || '-', // Fallback for Ref No
-        party_id: item.party_id,
-        party_name: item.parties?.name || 'Unknown Party',
-        amount: item.amount,
+        date: item.createdAt.toISOString(),
+        payment_number: item.transactionRef || '-',
+        party_id: item.partyId,
+        party_name: item.party?.name || 'Unknown Party',
+        amount: Number(item.amount),
         mode: item.mode,
-        transaction_ref: item.transaction_ref,
+        transaction_ref: item.transactionRef,
         notes: item.notes
     }))
 
-    // If search was intended for Party Name, we filter here since Supabase generic search is limited
-    if (filter.search) {
-        const searchLower = filter.search.toLowerCase()
-        payments = payments.filter((p: any) =>
-            p.party_name.toLowerCase().includes(searchLower) ||
-            (p.payment_number && p.payment_number.toLowerCase().includes(searchLower))
-        )
-    }
-
-    // Calculate summary
-    const total = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
+    const total = payments.reduce((sum: number, p: any) => sum + p.amount, 0)
 
     return {
         payments,
@@ -114,42 +84,30 @@ export async function createPaymentIn(data: {
     notes?: string
     image_url?: string
 }) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // 1. Get current party balance
-    const { data: party, error: partyError } = await supabase
-        .from('parties')
-        .select('current_balance, type')
-        .eq('id', data.party_id)
-        .single()
+    const party = await prisma.party.findUnique({
+        where: { id: data.party_id, tenantId: user.tenantId }
+    })
 
-    if (partyError || !party) {
+    if (!party) {
         throw new Error('Party not found')
     }
 
-    // 2. Insert Payment
-    // We maintain 'amount' as numeric. 
-    // Payment-In implies receiving money.
-    const { error: insertError } = await supabase
-        .from('payments')
-        .insert({
-            party_id: data.party_id,
+    await prisma.payment.create({
+        data: {
+            tenantId: user.tenantId,
+            partyId: data.party_id,
             amount: data.amount,
             mode: data.mode,
-            transaction_ref: data.payment_number, // Storing Ref No in transaction_ref for now as mapped
-            created_at: data.date.toISOString(), // Storing Selected Date in created_at for sorting
+            transactionRef: data.payment_number || data.transaction_ref,
+            createdAt: data.date,
             notes: data.notes
-        })
+        }
+    })
 
-    if (insertError) {
-        console.error('Error creating payment:', insertError)
-        throw new Error('Failed to create payment')
-    }
-
-    // 3. Update Party Balance
     try {
-        const { recalculatePartyBalance } = await import('@/actions/parties')
-        await recalculatePartyBalance(data.party_id)
+        await PartyService.recalculatePartyBalance(data.party_id, user.tenantId)
     } catch (e) {
         console.error("Failed to sync party balance (payment):", e)
     }
@@ -160,34 +118,24 @@ export async function createPaymentIn(data: {
 }
 
 export async function deletePaymentIn(id: string) {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
-    // 1. Get Payment details before delete to revert balance
-    const { data: payment, error: fetchError } = await supabase
-        .from('payments')
-        .select('party_id, amount')
-        .eq('id', id)
-        .single()
+    const payment = await prisma.payment.findUnique({
+        where: { id, tenantId: user.tenantId },
+        select: { partyId: true }
+    })
 
-    if (fetchError || !payment) {
+    if (!payment) {
         throw new Error('Payment not found')
     }
 
-    // 2. Delete Payment
-    const { error: deleteError } = await supabase
-        .from('payments')
-        .delete()
-        .eq('id', id)
+    await prisma.payment.delete({
+        where: { id, tenantId: user.tenantId }
+    })
 
-    if (deleteError) {
-        throw new Error('Failed to delete payment')
-    }
-
-    // 3. Revert Party Balance
-    if (payment.party_id) {
+    if (payment.partyId) {
         try {
-            const { recalculatePartyBalance } = await import('@/actions/parties')
-            await recalculatePartyBalance(payment.party_id)
+            await PartyService.recalculatePartyBalance(payment.partyId, user.tenantId)
         } catch (e) {
             console.error("Failed to sync party balance (delete payment):", e)
         }
@@ -197,9 +145,9 @@ export async function deletePaymentIn(id: string) {
 }
 
 export async function getNextPaymentRef() {
-    // Generate a simple auto-increment looking Ref No based on count + 1 or random
-    // Real implementation should check DB max
-    const supabase = await createClient()
-    const { count } = await supabase.from('payments').select('*', { count: 'exact', head: true })
-    return `PAY-${(count || 0) + 1}`
+    const user = await requireAuth()
+    const count = await prisma.payment.count({
+        where: { tenantId: user.tenantId }
+    })
+    return `PAY-${count + 1}`
 }

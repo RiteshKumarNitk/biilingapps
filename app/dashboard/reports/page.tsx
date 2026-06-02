@@ -1,20 +1,26 @@
-
-import { createClient } from '@/utils/supabase/server'
+import { requireAuth } from '@/lib/auth-server'
+import prisma from '@/lib/prisma'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import Link from 'next/link'
 import { BarChart3, FileText, ShoppingCart, Users, Receipt } from 'lucide-react'
 
 export default async function ReportsPage() {
-    const supabase = await createClient()
+    const user = await requireAuth()
 
     // Fetch some stats
-    const { data: invoices } = await supabase.from('invoices').select('grand_total, payment_status, created_at')
-    const { data: products } = await supabase.from('products').select('*')
+    const invoices = await prisma.invoice.findMany({
+        where: { tenantId: user.tenantId },
+        select: { grandTotal: true, paymentStatus: true, createdAt: true }
+    })
+    
+    const products = await prisma.product.findMany({
+        where: { tenantId: user.tenantId }
+    })
 
     // Calculate Reports
-    const totalSales = invoices?.reduce((acc, curr) => acc + curr.grand_total, 0) || 0
-    const pendingSales = totalSales - (invoices?.filter(i => i.payment_status === 'paid').reduce((acc, curr) => acc + curr.grand_total, 0) || 0)
-    const stockValue = products?.reduce((acc: number, curr: any) => acc + (curr.stock_quantity * curr.price), 0) || 0
+    const totalSales = invoices.reduce((acc, curr) => acc + curr.grandTotal, 0) || 0
+    const pendingSales = totalSales - (invoices.filter(i => i.paymentStatus?.toUpperCase() === 'PAID').reduce((acc, curr) => acc + curr.grandTotal, 0) || 0)
+    const stockValue = products.reduce((acc: number, curr: any) => acc + (curr.stockQuantity * curr.price), 0) || 0
 
     const quickLinks = [
         { title: 'Sales Report', href: '/dashboard/reports/sales', icon: Receipt, color: 'text-blue-600', bg: 'bg-blue-100/50' },

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea" // Need TextArea
 import { toast } from "sonner"
 import { updateTenantSettings } from "@/actions/user"
 import { Loader2 } from "lucide-react"
-import { createClient } from "@/utils/supabase/client"
+
 
 export function SettingsForm({ profile }: { profile: any }) {
     const [loading, setLoading] = useState(false)
@@ -34,24 +34,21 @@ export function SettingsForm({ profile }: { profile: any }) {
 
         try {
             setUploading(true)
-            const supabase = createClient()
-            const fileExt = file.name.split('.').pop()
-            const fileName = `${Date.now()}.${fileExt}`
-            const filePath = `logos/${fileName}`
+            const formData = new FormData()
+            formData.append('file', file)
 
-            const { error: uploadError } = await supabase.storage
-                .from('company-assets')
-                .upload(filePath, file)
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
 
-            if (uploadError) {
-                throw uploadError
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Upload failed')
             }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('company-assets')
-                .getPublicUrl(filePath)
-
-            setFormData(prev => ({ ...prev, logo_url: publicUrl }))
+            const data = await res.json()
+            setFormData(prev => ({ ...prev, logo_url: data.url }))
             toast.success("Logo uploaded successfully")
         } catch (error: any) {
             toast.error("Error uploading logo")
@@ -67,22 +64,21 @@ export function SettingsForm({ profile }: { profile: any }) {
 
         try {
             setUploadingSignature(true)
-            const supabase = createClient()
-            const fileExt = file.name.split('.').pop()
-            const fileName = `sig-${Date.now()}.${fileExt}`
-            const filePath = `logos/${fileName}`
+            const formData = new FormData()
+            formData.append('file', file)
 
-            const { error: uploadError } = await supabase.storage
-                .from('company-assets')
-                .upload(filePath, file)
+            const res = await fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
 
-            if (uploadError) throw uploadError
+            if (!res.ok) {
+                const errorData = await res.json()
+                throw new Error(errorData.error || 'Upload failed')
+            }
 
-            const { data: { publicUrl } } = supabase.storage
-                .from('company-assets')
-                .getPublicUrl(filePath)
-
-            setFormData(prev => ({ ...prev, signature_url: publicUrl }))
+            const data = await res.json()
+            setFormData(prev => ({ ...prev, signature_url: data.url }))
             toast.success("Signature uploaded")
         } catch (error: any) {
             toast.error("Error uploading signature")
