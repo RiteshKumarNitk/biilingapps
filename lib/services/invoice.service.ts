@@ -84,8 +84,8 @@ export class InvoiceService {
     return await prisma.$transaction(async (tx) => {
       // Calculate totals
       const items = data.items || []
-      const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
-      const grandTotal = items.reduce((acc, item) => acc + item.total_amount, 0)
+      const subtotal = items.reduce((acc: any, item: any) => acc + (item.quantity * item.unit_price), 0)
+      const grandTotal = items.reduce((acc: any, item: any) => acc + item.total_amount, 0)
       const receivedAmount = data.received_amount || 0
 
       // 1. Create Invoice
@@ -111,7 +111,7 @@ export class InvoiceService {
       })
 
       // 2. Create Invoice Items
-      const invoiceItems = items.map(item => ({
+      const invoiceItems = items.map((item: any) => ({
         tenantId,
         invoiceId: invoice.id,
         productId: item.product_id,
@@ -214,7 +214,7 @@ export class InvoiceService {
    */
   static async getInvoiceDetails(id: string, tenantId: string) {
     // 1. Get Invoice with Party Details
-    const invoice = await tx.invoice.findUnique({
+    const invoice = await prisma.invoice.findUnique({
       where: { id, tenantId },
       include: {
         party: true
@@ -226,7 +226,7 @@ export class InvoiceService {
     }
 
     // 2. Get Items
-    const items = await tx.invoiceItem.findMany({
+    const items = await prisma.invoiceItem.findMany({
       where: { invoiceId: id, tenantId },
       include: {
         product: {
@@ -239,7 +239,7 @@ export class InvoiceService {
     })
 
     // 3. Get Tenant
-    const tenant = await tx.tenant.findUnique({
+    const tenant = await prisma.tenant.findUnique({
       where: { id: invoice.tenantId }
     })
 
@@ -250,7 +250,7 @@ export class InvoiceService {
    * Get last invoice number for a tenant
    */
   static async getLastInvoiceNumber(tenantId: string) {
-    const lastInvoice = await tx.invoice.findFirst({
+    const lastInvoice = await prisma.invoice.findFirst({
       where: { tenantId },
       orderBy: { createdAt: 'desc' },
       select: { invoiceNumber: true }
@@ -274,7 +274,7 @@ export class InvoiceService {
    * Delete an invoice
    */
   static async deleteInvoice(id: string, tenantId: string) {
-    return await tx.$transaction(async (tx) => {
+    return await prisma.$transaction(async (tx: any) => {
       // 1. Get Invoice Details
       const invoice = await tx.invoice.findUnique({
         where: { id, tenantId },

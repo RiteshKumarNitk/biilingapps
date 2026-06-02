@@ -1,0 +1,10 @@
+{
+  "context_servers": {
+    "neon": {
+      "source": "custom",
+      "type": "http",
+      "url": "https://mcp.neon.tech/mcp",
+      "headers": {}
+    }
+  }
+}

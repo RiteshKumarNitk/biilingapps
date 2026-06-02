@@ -306,7 +306,7 @@ export class PartyService {
         amount: dn.grandTotal,
         ref: dn.dnNumber
       })))
-    ].sort((a, b) => {
+    ].sort((a: any, b: any) => {
       const dateA = a.date || a.createdAt
       const dateB = b.date || b.createdAt
       return new Date(dateB).getTime() - new Date(dateA).getTime()

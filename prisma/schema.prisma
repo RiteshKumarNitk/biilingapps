@@ -7,7 +7,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 // TENANTS & USERS
@@ -21,30 +20,43 @@ model Tenant {
   phone     String?
   email     String?
   logoUrl   String?
-  settings  Json     @default({})
+  settings  Json     @default("{}")
 
-  usersProfile UsersProfile[]
-  products     Product[]
-  stockMovements StockMovement[]
-  parties      Party[]
-  invoices     Invoice[]
-  payments     Payment[]
-  ledgerEntries LedgerEntry[]
-  expenses     Expense[]
-  onlineOrders OnlineOrder[]
-  quotations   Quotation[]
-  purchaseOrders PurchaseOrder[]
-  bankAccounts BankAccount[]
+  usersProfile     UsersProfile[]
+  products         Product[]
+  stockMovements   StockMovement[]
+  parties          Party[]
+  invoices         Invoice[]
+  payments         Payment[]
+  ledgerEntries    LedgerEntry[]
+  expenses         Expense[]
+  onlineOrders     OnlineOrder[]
+  quotations       Quotation[]
+  purchaseOrders   PurchaseOrder[]
+  bankAccounts     BankAccount[]
+  invoiceItems     InvoiceItem[]
+  quotationItems   QuotationItem[]
+  creditNotes      CreditNote[]
+  creditNoteItems  CreditNoteItem[]
+  deliveryChallans DeliveryChallan[]
+  challanItems     ChallanItem[]
+  poItems          PoItem[]
+  saleOrders       SaleOrder[]
+  saleOrderItems   SaleOrderItem[]
+  debitNotes       DebitNote[]
+  debitNoteItems   DebitNoteItem[]
 }
 
 model UsersProfile {
-  id            String   @id @default(uuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  fullName      String?
-  role          Role     @default(owner)
-  tenantId      String
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  email     String   @unique
+  password  String
+  fullName  String?
+  role      Role     @default(owner)
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
@@ -57,46 +69,47 @@ enum Role {
 
 // INVENTORY & PRODUCTS
 model Product {
-  id              String   @id @default(uuid())
-  tenantId        String
-  createdAt       DateTime @default(now())
-  name            String
-  description     String?
-  sku             String?
-  hsnCode         String?
-  price           Float    @default(0)
-  costPrice       Float    @default(0)
-  gstRate         Float    @default(0)
-  stockQuantity   Float    @default(0)
-  lowStockThreshold Float   @default(5)
-  unit            String   @default("pcs")
-  barcode         String?
-  imageUrl        String?
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  stockMovements  StockMovement[]
-  invoiceItems    InvoiceItem[]
-  quotationItems  QuotationItem[]
-  poItems         PoItem[]
-  challanItems    ChallanItem[]
-  creditNoteItems CreditNoteItem[]
-  saleOrderItems  SaleOrderItem[]
+  id                String           @id @default(uuid())
+  tenantId          String
+  createdAt         DateTime         @default(now())
+  name              String
+  description       String?
+  sku               String?
+  hsnCode           String?
+  price             Float            @default(0)
+  costPrice         Float            @default(0)
+  gstRate           Float            @default(0)
+  stockQuantity     Float            @default(0)
+  lowStockThreshold Float            @default(5)
+  unit              String           @default("pcs")
+  barcode           String?
+  imageUrl          String?
+  tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockMovements    StockMovement[]
+  invoiceItems      InvoiceItem[]
+  quotationItems    QuotationItem[]
+  poItems           PoItem[]
+  challanItems      ChallanItem[]
+  creditNoteItems   CreditNoteItem[]
+  saleOrderItems    SaleOrderItem[]
+  debitNoteItems    DebitNoteItem[]
 
-  @@index([tenantId])
   @@unique([tenantId, sku])
   @@unique([tenantId, barcode])
+  @@index([tenantId])
 }
 
 model StockMovement {
-  id           String   @id @default(uuid())
-  tenantId     String
-  createdAt    DateTime @default(now())
-  productId    String
-  type         MovementType
-  quantity     Float
-  referenceId  String?
-  notes        String?
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id          String       @id @default(uuid())
+  tenantId    String
+  createdAt   DateTime     @default(now())
+  productId   String
+  type        MovementType
+  quantity    Float
+  referenceId String?
+  notes       String?
+  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product     Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
 }
@@ -111,23 +124,26 @@ enum MovementType {
 
 // CUSTOMERS & SUPPLIERS (PARTIES)
 model Party {
-  id              String   @id @default(uuid())
-  tenantId        String
-  createdAt       DateTime @default(now())
-  type            PartyType
-  name            String
-  gstin           String?
-  phone           String?
-  email           String?
-  address         String?
-  openingBalance  Float    @default(0)
-  currentBalance  Float    @default(0)
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoices        Invoice[] @relation("PartyInvoices")
-  purchaseOrders  PurchaseOrder[] @relation("PartyPurchaseOrders")
-  payments        Payment[] @relation("PartyPayments")
-  creditNotes     CreditNote[] @relation("PartyCreditNotes")
-  debitNotes      DebitNote[] @relation("PartyDebitNotes")
+  id               String            @id @default(uuid())
+  tenantId         String
+  createdAt        DateTime          @default(now())
+  type             PartyType
+  name             String
+  gstin            String?
+  phone            String?
+  email            String?
+  address          String?
+  openingBalance   Float             @default(0)
+  currentBalance   Float             @default(0)
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoices         Invoice[]         @relation("PartyInvoices")
+  purchaseOrders   PurchaseOrder[]   @relation("PartyPurchaseOrders")
+  payments         Payment[]         @relation("PartyPayments")
+  creditNotes      CreditNote[]      @relation("PartyCreditNotes")
+  debitNotes       DebitNote[]       @relation("PartyDebitNotes")
+  quotations       Quotation[]
+  deliveryChallans DeliveryChallan[]
+  saleOrders       SaleOrder[]
 }
 
 enum PartyType {
@@ -137,11 +153,11 @@ enum PartyType {
 
 // INVOICING
 model Invoice {
-  id              String   @id @default(uuid())
+  id              String        @id @default(uuid())
   tenantId        String
-  createdAt       DateTime @default(now())
+  createdAt       DateTime      @default(now())
   invoiceNumber   String
-  date            DateTime @default(now())
+  date            DateTime      @default(now())
   dueDate         DateTime?
   partyId         String?
   partyName       String?
@@ -150,25 +166,26 @@ model Invoice {
   partyPhone      String?
   partyEmail      String?
   status          InvoiceStatus @default(DRAFT)
-  
-  subtotal        Float   @default(0)
-  totalGst        Float   @default(0)
-  discountAmount  Float   @default(0)
-  grandTotal      Float   @default(0)
-  paidAmount      Float   @default(0)
-  
-  paymentStatus   PaymentStatus @default(UNPAID)
-  pdfUrl          String?
-  notes           String?
-  shareToken      String  @default(uuid())
-  
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party           Party?   @relation("PartyInvoices", fields: [partyId], references: [id], onDelete: SetNull)
-  invoiceItems    InvoiceItem[]
-  payments        Payment[] @relation("InvoicePayments")
-  
-  @@index([tenantId])
+
+  subtotal       Float @default(0)
+  totalGst       Float @default(0)
+  discountAmount Float @default(0)
+  grandTotal     Float @default(0)
+  paidAmount     Float @default(0)
+
+  paymentStatus PaymentStatus @default(UNPAID)
+  pdfUrl        String?
+  notes         String?
+  shareToken    String        @default(uuid())
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party        Party?        @relation("PartyInvoices", fields: [partyId], references: [id], onDelete: SetNull)
+  invoiceItems InvoiceItem[]
+  payments     Payment[]     @relation("InvoicePayments")
+  creditNotes  CreditNote[]
+
   @@unique([tenantId, invoiceNumber])
+  @@index([tenantId])
 }
 
 enum InvoiceStatus {
@@ -186,42 +203,42 @@ enum PaymentStatus {
 }
 
 model InvoiceItem {
-  id            String   @id @default(uuid())
-  tenantId      String
-  invoiceId     String
-  productId     String?
-  description   String
-  quantity      Float
-  unitPrice     Float
-  gstRate       Float    @default(0)
-  taxAmount     Float    @default(0)
-  discount      Float    @default(0)
-  totalAmount   Float
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  
+  id          String  @id @default(uuid())
+  tenantId    String
+  invoiceId   String
+  productId   String?
+  description String
+  quantity    Float
+  unitPrice   Float
+  gstRate     Float   @default(0)
+  taxAmount   Float   @default(0)
+  discount    Float   @default(0)
+  totalAmount Float
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   @@index([tenantId])
 }
 
 // PAYMENTS & LEDGER
 model Payment {
-  id              String   @id @default(uuid())
-  tenantId        String
-  createdAt       DateTime @default(now())
-  invoiceId       String?
-  partyId         String?
-  
-  amount          Float
-  mode            PaymentMode
-  transactionRef  String?
-  notes           String?
-  
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice         Invoice? @relation("InvoicePayments", fields: [invoiceId], references: [id], onDelete: SetNull)
-  party           Party?   @relation("PartyPayments", fields: [partyId], references: [id], onDelete: SetNull)
-  
+  id        String   @id @default(uuid())
+  tenantId  String
+  createdAt DateTime @default(now())
+  invoiceId String?
+  partyId   String?
+
+  amount         Float
+  mode           PaymentMode
+  transactionRef String?
+  notes          String?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation("InvoicePayments", fields: [invoiceId], references: [id], onDelete: SetNull)
+  party   Party?   @relation("PartyPayments", fields: [partyId], references: [id], onDelete: SetNull)
+
   @@index([tenantId])
 }
 
@@ -234,53 +251,53 @@ enum PaymentMode {
 }
 
 model LedgerEntry {
-  id            String   @id @default(uuid())
-  tenantId      String
-  createdAt     DateTime @default(now())
-  date          DateTime @default(now())
-  description   String?
-  
+  id          String   @id @default(uuid())
+  tenantId    String
+  createdAt   DateTime @default(now())
+  date        DateTime @default(now())
+  description String?
+
   accountType   String?
   debit         Float   @default(0)
   credit        Float   @default(0)
   referenceId   String?
   referenceType String?
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
 }
 
 // EXPENSES
 model Expense {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
-  category    String?
-  amount      Float
-  date        DateTime @default(now())
-  notes       String?
-  receiptUrl  String?
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id         String   @id @default(uuid())
+  tenantId   String
+  createdAt  DateTime @default(now())
+  category   String?
+  amount     Float
+  date       DateTime @default(now())
+  notes      String?
+  receiptUrl String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
 }
 
 // ONLINE STORE & ORDERS
 model OnlineOrder {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
-  customerName String
-  customerPhone String
+  id              String      @id @default(uuid())
+  tenantId        String
+  createdAt       DateTime    @default(now())
+  customerName    String
+  customerPhone   String
   customerAddress String?
-  status      OrderStatus @default(NEW)
-  totalAmount Float
-  items       Json
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  status          OrderStatus @default(NEW)
+  totalAmount     Float
+  items           Json
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
 }
 
@@ -293,33 +310,33 @@ enum OrderStatus {
 
 // QUOTATIONS / ESTIMATES
 model Quotation {
-  id            String   @id @default(uuid())
-  tenantId      String
-  createdAt     DateTime @default(now())
+  id              String          @id @default(uuid())
+  tenantId        String
+  createdAt       DateTime        @default(now())
   quotationNumber String
-  date          DateTime @default(now())
-  validUntil    DateTime?
-  partyId       String?
-  partyName     String?
-  partyAddress  String?
+  date            DateTime        @default(now())
+  validUntil      DateTime?
+  partyId         String?
+  partyName       String?
+  partyAddress    String?
   shippingAddress String?
-  partyPhone    String?
-  partyEmail    String?
-  status        QuotationStatus @default(DRAFT)
-  
-  subtotal      Float   @default(0)
-  totalGst      Float   @default(0)
-  discountAmount Float   @default(0)
-  grandTotal    Float   @default(0)
-  
-  notes         String?
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party         Party?   @relation(fields: [partyId], references: [id], onDelete: SetNull)
+  partyPhone      String?
+  partyEmail      String?
+  status          QuotationStatus @default(DRAFT)
+
+  subtotal       Float @default(0)
+  totalGst       Float @default(0)
+  discountAmount Float @default(0)
+  grandTotal     Float @default(0)
+
+  notes String?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party          Party?          @relation(fields: [partyId], references: [id], onDelete: SetNull)
   quotationItems QuotationItem[]
-  
-  @@index([tenantId])
+
   @@unique([tenantId, quotationNumber])
+  @@index([tenantId])
 }
 
 enum QuotationStatus {
@@ -331,87 +348,87 @@ enum QuotationStatus {
 }
 
 model QuotationItem {
-  id            String   @id @default(uuid())
-  tenantId      String
-  quotationId   String
-  productId     String?
-  description   String
-  quantity      Float
-  unitPrice     Float
-  gstRate       Float    @default(0)
-  taxAmount     Float    @default(0)
-  discount      Float    @default(0)
-  totalAmount   Float
-  
-  tenant        Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  quotation     Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
-  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  
+  id          String  @id @default(uuid())
+  tenantId    String
+  quotationId String
+  productId   String?
+  description String
+  quantity    Float
+  unitPrice   Float
+  gstRate     Float   @default(0)
+  taxAmount   Float   @default(0)
+  discount    Float   @default(0)
+  totalAmount Float
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotation Quotation @relation(fields: [quotationId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   @@index([tenantId])
 }
 
 // SALE RETURNS (CREDIT NOTES)
 model CreditNote {
-  id           String   @id @default(uuid())
-  tenantId     String
-  createdAt    DateTime @default(now())
-  cnNumber     String
-  date         DateTime @default(now())
-  partyId      String?
-  partyName    String?
+  id                String   @id @default(uuid())
+  tenantId          String
+  createdAt         DateTime @default(now())
+  cnNumber          String
+  date              DateTime @default(now())
+  partyId           String?
+  partyName         String?
   originalInvoiceId String?
-  
-  subtotal     Float   @default(0)
-  totalGst     Float   @default(0)
-  grandTotal   Float   @default(0)
-  
-  notes        String?
-  
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party        Party?   @relation("PartyCreditNotes", fields: [partyId], references: [id], onDelete: SetNull)
-  originalInvoice Invoice? @relation(fields: [originalInvoiceId], references: [id], onDelete: SetNull)
+
+  subtotal   Float @default(0)
+  totalGst   Float @default(0)
+  grandTotal Float @default(0)
+
+  notes String?
+
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party           Party?           @relation("PartyCreditNotes", fields: [partyId], references: [id], onDelete: SetNull)
+  originalInvoice Invoice?         @relation(fields: [originalInvoiceId], references: [id], onDelete: SetNull)
   creditNoteItems CreditNoteItem[]
-  
-  @@index([tenantId])
+
   @@unique([tenantId, cnNumber])
+  @@index([tenantId])
 }
 
 model CreditNoteItem {
-  id           String   @id @default(uuid())
+  id           String  @id @default(uuid())
   tenantId     String
   creditNoteId String
   productId    String?
   description  String
   quantity     Float
   unitPrice    Float
-  gstRate      Float    @default(0)
-  taxAmount    Float    @default(0)
+  gstRate      Float   @default(0)
+  taxAmount    Float   @default(0)
   totalAmount  Float
-  
-  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  creditNote   CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
-  product      Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+  product    Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
 // DELIVERY CHALLANS
 model DeliveryChallan {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
+  id            String   @id @default(uuid())
+  tenantId      String
+  createdAt     DateTime @default(now())
   challanNumber String
-  date        DateTime @default(now())
-  partyId     String?
-  partyName   String?
-  
-  status      ChallanStatus @default(OPEN)
-  notes       String?
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party       Party?   @relation(fields: [partyId], references: [id], onDelete: SetNull)
+  date          DateTime @default(now())
+  partyId       String?
+  partyName     String?
+
+  status ChallanStatus @default(OPEN)
+  notes  String?
+
+  tenant       Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party        Party?        @relation(fields: [partyId], references: [id], onDelete: SetNull)
   challanItems ChallanItem[]
-  
-  @@index([tenantId])
+
   @@unique([tenantId, challanNumber])
+  @@index([tenantId])
 }
 
 enum ChallanStatus {
@@ -421,41 +438,41 @@ enum ChallanStatus {
 }
 
 model ChallanItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   tenantId    String
   challanId   String
   productId   String?
   description String
   quantity    Float
-  unitPrice   Float    @default(0)
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  challan     DeliveryChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  unitPrice   Float   @default(0)
+
+  tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  challan DeliveryChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
 // PURCHASE ORDERS
 model PurchaseOrder {
-  id              String   @id @default(uuid())
-  tenantId        String
-  createdAt       DateTime @default(now())
-  poNumber        String
-  date            DateTime @default(now())
-  partyId         String?
-  partyName       String?
-  status          PoStatus @default(PENDING)
-  
+  id        String   @id @default(uuid())
+  tenantId  String
+  createdAt DateTime @default(now())
+  poNumber  String
+  date      DateTime @default(now())
+  partyId   String?
+  partyName String?
+  status    PoStatus @default(PENDING)
+
   expectedDeliveryDate DateTime?
-  grandTotal      Float    @default(0)
-  
-  notes           String?
-  
-  tenant          Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party           Party?   @relation("PartyPurchaseOrders", fields: [partyId], references: [id], onDelete: SetNull)
-  poItems         PoItem[]
-  
-  @@index([tenantId])
+  grandTotal           Float     @default(0)
+
+  notes String?
+
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party   Party?   @relation("PartyPurchaseOrders", fields: [partyId], references: [id], onDelete: SetNull)
+  poItems PoItem[]
+
   @@unique([tenantId, poNumber])
+  @@index([tenantId])
 }
 
 enum PoStatus {
@@ -465,7 +482,7 @@ enum PoStatus {
 }
 
 model PoItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   tenantId    String
   poId        String
   productId   String?
@@ -473,115 +490,115 @@ model PoItem {
   quantity    Float
   unitPrice   Float
   totalAmount Float
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  product       Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
 }
 
 // BANK ACCOUNTS
 model BankAccount {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
-  accountName String
-  accountNumber String?
-  ifscCode    String?
-  bankName    String?
-  openingBalance Float   @default(0)
-  currentBalance Float   @default(0)
-  isDefault   Boolean   @default(false)
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  
+  id             String   @id @default(uuid())
+  tenantId       String
+  createdAt      DateTime @default(now())
+  accountName    String
+  accountNumber  String?
+  ifscCode       String?
+  bankName       String?
+  openingBalance Float    @default(0)
+  currentBalance Float    @default(0)
+  isDefault      Boolean  @default(false)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
   @@index([tenantId])
 }
 
 // SALE ORDERS (Added based on usage in actions)
 model SaleOrder {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
-  date        DateTime @default(now())
-  partyId     String?
-  partyName   String?
-  partyAddress String?
+  id              String   @id @default(uuid())
+  tenantId        String
+  createdAt       DateTime @default(now())
+  date            DateTime @default(now())
+  partyId         String?
+  partyName       String?
+  partyAddress    String?
   shippingAddress String?
-  partyPhone  String?
-  partyEmail  String?
-  status      String @default("pending")
-  
-  subtotal    Float   @default(0)
-  totalGst    Float   @default(0)
-  discountAmount Float   @default(0)
-  grandTotal  Float   @default(0)
-  
-  notes       String?
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party       Party?   @relation(fields: [partyId], references: [id], onDelete: SetNull)
+  partyPhone      String?
+  partyEmail      String?
+  status          String   @default("pending")
+
+  subtotal       Float @default(0)
+  totalGst       Float @default(0)
+  discountAmount Float @default(0)
+  grandTotal     Float @default(0)
+
+  notes String?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party          Party?          @relation(fields: [partyId], references: [id], onDelete: SetNull)
   saleOrderItems SaleOrderItem[]
-  
+
   @@index([tenantId])
 }
 
 model SaleOrderItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   tenantId    String
   saleOrderId String
   productId   String?
   description String
   quantity    Float
   unitPrice   Float
-  gstRate     Float    @default(0)
-  taxAmount   Float    @default(0)
-  discount    Float    @default(0)
+  gstRate     Float   @default(0)
+  taxAmount   Float   @default(0)
+  discount    Float   @default(0)
   totalAmount Float
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  saleOrder   SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  saleOrder SaleOrder @relation(fields: [saleOrderId], references: [id], onDelete: Cascade)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
   @@index([tenantId])
 }
 
 // DEBIT NOTES (Added based on usage in parties actions)
 model DebitNote {
-  id          String   @id @default(uuid())
-  tenantId    String
-  createdAt   DateTime @default(now())
-  dnNumber    String
-  date        DateTime @default(now())
-  partyId     String?
-  partyName   String?
-  
-  subtotal    Float   @default(0)
-  totalGst    Float   @default(0)
-  grandTotal  Float   @default(0)
-  
-  notes       String?
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  party       Party?   @relation("PartyDebitNotes", fields: [partyId], references: [id], onDelete: SetNull)
+  id        String   @id @default(uuid())
+  tenantId  String
+  createdAt DateTime @default(now())
+  dnNumber  String
+  date      DateTime @default(now())
+  partyId   String?
+  partyName String?
+
+  subtotal   Float @default(0)
+  totalGst   Float @default(0)
+  grandTotal Float @default(0)
+
+  notes String?
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  party          Party?          @relation("PartyDebitNotes", fields: [partyId], references: [id], onDelete: SetNull)
   debitNoteItems DebitNoteItem[]
-  
-  @@index([tenantId])
+
   @@unique([tenantId, dnNumber])
+  @@index([tenantId])
 }
 
 model DebitNoteItem {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   tenantId    String
   debitNoteId String
   productId   String?
   description String
   quantity    Float
   unitPrice   Float
-  gstRate     Float    @default(0)
-  taxAmount   Float    @default(0)
+  gstRate     Float   @default(0)
+  taxAmount   Float   @default(0)
   totalAmount Float
-  
-  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  debitNote   DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: SetNull)
-  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  debitNote DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: SetNull)
+  product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
 }

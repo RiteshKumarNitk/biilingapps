@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verify token
-  const payload = verifyAccessToken(token)
+  const payload = await verifyAccessToken(token)
   if (!payload) {
     return NextResponse.json(
       { error: 'Invalid or expired token' },
