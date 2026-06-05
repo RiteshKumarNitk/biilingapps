@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
 import { Party, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma'
 
 export class PartyService {
   /**
@@ -298,7 +296,7 @@ export class PartyService {
         ...cn,
         type: 'CREDIT_NOTE',
         amount: cn.grandTotal,
-        ref: p.cnNumber
+        ref: cn.cnNumber
       }))),
       ...(debitNotes.map(dn => ({
         ...dn,

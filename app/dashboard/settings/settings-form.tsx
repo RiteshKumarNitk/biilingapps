@@ -14,7 +14,7 @@ export function SettingsForm({ profile }: { profile: any }) {
     const [loading, setLoading] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [uploadingSignature, setUploadingSignature] = useState(false)
-    const tenant = profile?.tenants || {}
+    const tenant = profile?.tenant || {}
 
     const [formData, setFormData] = useState({
         company_name: tenant.name || "",

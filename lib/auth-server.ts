@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { verifyRefreshToken } from './jwt'
-import { prisma } from './prisma'
+import prisma from './prisma'
 
 export async function requireAuth() {
   const cookieStore = await cookies()

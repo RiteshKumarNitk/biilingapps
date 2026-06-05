@@ -116,20 +116,20 @@ export default function AddSalePage() {
                         if (quotation) {
                             // Populate party info? 
                             // We need full party object to be clean, but for now we trust ID if in list
-                            if (quotation.party_id) {
+                            if (quotation.partyId) {
                                 // Find party in list to get balance etc
-                                const p = partyData?.find(pd => pd.id === quotation.party_id)
+                                const p = partyData?.find(pd => pd.id === quotation.partyId)
                                 if (p) {
                                     setSelectedPartyId(p.id)
                                     setBillingName(p.name)
                                     setPhoneNumber(p.phone || '')
-                                    setBillingAddress(p.billing_address || '')
-                                    setShippingAddress(p.shipping_address || '')
-                                    setSelectedPartyBalance(p.current_balance || 0)
+                                    setBillingAddress(p.address || '')
+                                    setShippingAddress(p.address || '')
+                                    setSelectedPartyBalance(p.currentBalance || 0)
                                 } else {
                                     // Party loaded explicitly if needed, but assuming list covers active ones
-                                    setSelectedPartyId(quotation.party_id)
-                                    setBillingName(quotation.party_name || '')
+                                    setSelectedPartyId(quotation.partyId)
+                                    setBillingName(quotation.partyName || '')
                                 }
                             }
 
@@ -137,17 +137,17 @@ export default function AddSalePage() {
                             if (qItems && qItems.length > 0) {
                                 const newItems: TransactionItem[] = qItems.map((qi: any, idx: number) => ({
                                     rowId: idx.toString(),
-                                    productId: qi.product_id,
+                                    productId: qi.productId,
                                     description: qi.description,
                                     quantity: qi.quantity,
                                     unit: 'PCS',
-                                    price: qi.unit_price,
+                                    price: qi.unitPrice,
                                     taxType: 'exclusive',
                                     discountValue: 0,
                                     discountType: 'percentage',
-                                    gstRate: qi.gst_rate || 0,
-                                    taxAmount: qi.tax_amount || 0,
-                                    amount: qi.total_amount
+                                    gstRate: qi.gstRate || 0,
+                                    taxAmount: qi.taxAmount || 0,
+                                    amount: qi.totalAmount
                                 }))
                                 setItems(newItems)
 
@@ -164,35 +164,35 @@ export default function AddSalePage() {
                     try {
                         const { order, items: oItems } = await getSaleOrder(fromSaleOrderId)
                         if (order) {
-                            if (order.party_id) {
-                                const p = partyData?.find(pd => pd.id === order.party_id)
+                            if (order.partyId) {
+                                const p = partyData?.find(pd => pd.id === order.partyId)
                                 if (p) {
                                     setSelectedPartyId(p.id)
                                     setBillingName(p.name)
                                     setPhoneNumber(p.phone || '')
-                                    setBillingAddress(p.billing_address || '')
-                                    setShippingAddress(p.shipping_address || '')
-                                    setSelectedPartyBalance(p.current_balance || 0)
+                                    setBillingAddress(p.address || '')
+                                    setShippingAddress(p.address || '')
+                                    setSelectedPartyBalance(p.currentBalance || 0)
                                 } else {
-                                    setSelectedPartyId(order.party_id)
-                                    setBillingName(order.party_name || '')
+                                    setSelectedPartyId(order.partyId)
+                                    setBillingName(order.partyName || '')
                                 }
                             }
 
                             if (oItems && oItems.length > 0) {
                                 const newItems: TransactionItem[] = oItems.map((oi: any, idx: number) => ({
                                     rowId: idx.toString(),
-                                    productId: oi.product_id,
+                                    productId: oi.productId,
                                     description: oi.description,
                                     quantity: oi.quantity,
                                     unit: 'PCS',
-                                    price: oi.unit_price,
+                                    price: oi.unitPrice,
                                     taxType: 'exclusive',
                                     discountValue: 0,
                                     discountType: 'percentage',
-                                    gstRate: oi.gst_rate || 0,
-                                    taxAmount: oi.tax_amount || 0,
-                                    amount: oi.total_amount
+                                    gstRate: oi.gstRate || 0,
+                                    taxAmount: oi.taxAmount || 0,
+                                    amount: oi.totalAmount
                                 }))
                                 setItems(newItems)
                             }
@@ -218,16 +218,16 @@ export default function AddSalePage() {
             setSelectedPartyId(id)
             setBillingName(party.name)
             setPhoneNumber(party.phone || '')
-            setBillingAddress(party.billing_address || '')
-            setShippingAddress(party.shipping_address || '')
-            setSelectedPartyBalance(party.current_balance || 0)
+            setBillingAddress(party.address || '')
+            setShippingAddress(party.address || '')
+            setSelectedPartyBalance(party.currentBalance || 0)
 
             try {
                 // Fetch fresh balance in background to ensure accuracy
                 const freshParty = await getParty(id)
                 if (freshParty) {
                     setParties(prev => prev.map(p => p.id === id ? freshParty : p))
-                    setSelectedPartyBalance(freshParty.current_balance || 0)
+                    setSelectedPartyBalance(freshParty.currentBalance || 0)
                 }
             } catch (e) {
                 console.error("Failed to refresh party balance", e)

@@ -5,6 +5,31 @@ import prisma from '@/lib/prisma'
 import { productSchema, ProductFormValues } from '@/lib/schemas/product'
 import { revalidatePath } from 'next/cache'
 
+function mapProductToPrisma(data: ProductFormValues) {
+    return {
+        name: data.name,
+        description: data.description,
+        sku: data.sku,
+        hsnCode: data.hsn_code,
+        price: data.price,
+        costPrice: data.cost_price,
+        gstRate: data.gst_rate,
+        stockQuantity: data.stock_quantity,
+        lowStockThreshold: data.low_stock_threshold,
+        unit: data.unit,
+        barcode: data.barcode,
+        imageUrl: data.image_url,
+        category: data.category,
+        taxMode: data.tax_mode,
+        discountValue: data.discount_value,
+        discountType: data.discount_type,
+        wholesalePrice: data.wholesale_price,
+        wholesalePrices: data.wholesale_prices as any,
+        asOfDate: data.as_of_date,
+        type: data.type
+    }
+}
+
 export async function getProducts(page = 1, pageSize = 10, search = '') {
     const user = await requireAuth()
     const start = (page - 1) * pageSize
@@ -33,7 +58,7 @@ export async function createProduct(data: ProductFormValues) {
 
     await prisma.product.create({
         data: {
-            ...validated as any,
+            ...mapProductToPrisma(validated),
             tenantId: user.tenantId,
         }
     })
@@ -47,7 +72,7 @@ export async function updateProduct(id: string, data: ProductFormValues) {
 
     await prisma.product.updateMany({
         where: { id, tenantId: user.tenantId },
-        data: validated as any
+        data: mapProductToPrisma(validated)
     })
 
     revalidatePath('/dashboard/inventory')
@@ -102,7 +127,7 @@ export async function getCategories() {
 export async function getUnits() {
     const user = await requireAuth()
     const products = await prisma.product.findMany({
-        where: { tenantId: user.tenantId, unit: { not: null } },
+        where: { tenantId: user.tenantId },
         select: { unit: true }
     })
 

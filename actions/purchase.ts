@@ -45,7 +45,7 @@ export async function createPurchaseBill(data: any) {
                 data: {
                     tenantId: user.tenantId,
                     productId: item.productId,
-                    type: 'PURCHASE',
+                    type: 'PURCHASE_RECEIVED',
                     quantity: item.quantity,
                     referenceId: po.id,
                     notes: 'Purchase Bill ' + data.bill_number

@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
 import { Product, Prisma } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma'
 
 export class ProductService {
   /**
@@ -116,14 +114,12 @@ export class ProductService {
    * Get low stock products
    */
   static async getLowStock(tenantId: string) {
-    return prisma.product.findMany({
-      where: {
-        tenantId,
-        stockQuantity: {
-          lte: Prisma.JsonFieldEquals('lowStockThreshold')
-        }
-      }
-    })
+    const products = await prisma.$queryRaw<Product[]>`
+      SELECT * FROM "Product"
+      WHERE "tenantId" = ${tenantId}
+      AND "stockQuantity" <= "lowStockThreshold"
+    `
+    return products
   }
 }
 

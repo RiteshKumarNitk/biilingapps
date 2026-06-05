@@ -84,6 +84,14 @@ model Product {
   unit              String           @default("pcs")
   barcode           String?
   imageUrl          String?
+  category          String?
+  type              String           @default("product")
+  taxMode           String           @default("exclusive")
+  discountValue     Float            @default(0)
+  discountType      String           @default("percentage")
+  wholesalePrice    Float            @default(0)
+  wholesalePrices   Json?
+  asOfDate          DateTime?
   tenant            Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   stockMovements    StockMovement[]
   invoiceItems      InvoiceItem[]
@@ -329,6 +337,7 @@ model Quotation {
   discountAmount Float @default(0)
   grandTotal     Float @default(0)
 
+  type           String  @default("ESTIMATE")
   notes String?
 
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -519,7 +528,9 @@ model SaleOrder {
   id              String   @id @default(uuid())
   tenantId        String
   createdAt       DateTime @default(now())
+  orderNumber     String
   date            DateTime @default(now())
+  dueDate         DateTime?
   partyId         String?
   partyName       String?
   partyAddress    String?

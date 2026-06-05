@@ -1,4 +1,4 @@
-import type { RequestInit } from 'node-fetch'
+// Using global RequestInit from dom types
 // For browser, we can use fetch from window
 // We'll create a wrapper that works both in client and server
 

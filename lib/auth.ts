@@ -1,6 +1,6 @@
 import { UsersProfile } from '@prisma/client'
 import { compare, hash } from 'bcryptjs'
-import { prisma } from './prisma'
+import prisma from './prisma'
 import { JWTPayload, verifyAccessToken, verifyRefreshToken, signAccessToken, signRefreshToken } from './jwt'
 
 // Auth Service Class
@@ -48,7 +48,7 @@ export class AuthService {
           phone: data.tenantData.phone,
           email: data.tenantData.email,
           logoUrl: data.tenantData.logoUrl,
-          settings: data.tenantData.settings || {}
+          settings: (data.tenantData.settings || {}) as any
         }
       })
 

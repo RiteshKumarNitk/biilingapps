@@ -12,11 +12,12 @@ export default async function PublicInvoicePage({
     const { token } = await params;
     const data = await getPublicInvoice(token)
 
-    if (!data || !data.invoice) {
+    if (!data) {
         notFound()
     }
 
-    const { invoice, items, tenant } = data
+    const { tenant, invoiceItems: items, party, ...invoiceData } = data
+    const invoice = { ...invoiceData, party }
 
     return (
         <div className="min-h-screen bg-gray-50 py-10">

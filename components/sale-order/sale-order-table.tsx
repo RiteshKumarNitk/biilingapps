@@ -138,19 +138,19 @@ export function SaleOrderTable({ data }: SaleOrderTableProps) {
                                             />
                                         </TableCell>
                                         <TableCell>
-                                            <Link href={`/dashboard/parties/${order.party_id}`} className="text-blue-600 hover:underline font-medium">
-                                                {order.party_name}
+                                            <Link href={`/dashboard/parties/${order.partyId}`} className="text-blue-600 hover:underline font-medium">
+                                                {order.partyName}
                                             </Link>
                                         </TableCell>
-                                        <TableCell className="text-slate-600 font-medium">{order.order_number}</TableCell>
+                                        <TableCell className="text-slate-600 font-medium">{order.orderNumber}</TableCell>
                                         <TableCell className="text-slate-600">
                                             {format(new Date(order.date), 'dd/MM/yyyy')}
                                         </TableCell>
                                         <TableCell className="text-slate-600">
-                                            {order.due_date ? format(new Date(order.due_date), 'dd/MM/yyyy') : '-'}
+                                            {order.dueDate ? format(new Date(order.dueDate), 'dd/MM/yyyy') : '-'}
                                         </TableCell>
                                         <TableCell className="text-right font-medium text-slate-700">
-                                            ₹{Number(order.grand_total).toFixed(2)}
+                                            ₹{Number(order.grandTotal).toFixed(2)}
                                         </TableCell>
                                         <TableCell className="text-right font-medium text-slate-700">
                                             {/* Balance is full amount unless payments linked (not in scope) or converted (0 balance logic?) 
@@ -160,7 +160,7 @@ export function SaleOrderTable({ data }: SaleOrderTableProps) {
                                                 User request: "Balance" logic not fully specified but "Same as total (until converted)". 
                                                 So if converted, show 0? 
                                             */}
-                                            {isConverted ? '₹0.00' : `₹${Number(order.grand_total).toFixed(2)}`}
+                                            {isConverted ? '₹0.00' : `₹${Number(order.grandTotal).toFixed(2)}`}
                                         </TableCell>
                                         <TableCell>
                                             <span className="text-slate-500 text-sm">Sale Order</span>

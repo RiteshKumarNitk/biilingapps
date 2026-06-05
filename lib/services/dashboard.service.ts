@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { startOfMonth, endOfMonth, subMonths, format, setYear, setMonth, startOfYear, endOfYear } from 'date-fns'
-
-const prisma = new PrismaClient()
+import { startOfMonth, endOfMonth, subMonths, setYear, setMonth, startOfYear, endOfYear, format } from 'date-fns'
+import prisma from '../prisma'
 
 export class DashboardService {
   /**

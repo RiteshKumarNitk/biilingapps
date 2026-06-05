@@ -19,7 +19,7 @@ export default async function Page() {
     // If tenants is a foreign key on users_profile (tenant_id), it will be an object.
 
     // Safer to just pass settings directly if it exists.
-    const settings = profile?.tenants?.settings || {}
+    const settings = profile?.tenant?.settings || {}
 
     return (
         <div className="max-w-4xl">

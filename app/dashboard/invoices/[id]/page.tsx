@@ -20,9 +20,9 @@ export default async function InvoicePage({
                 <h2 className="text-3xl font-bold tracking-tight">Invoice Details</h2>
                 <div className="flex items-center space-x-2">
                     <ShareInvoiceButton
-                        token={invoice.share_token}
-                        invoiceNumber={invoice.invoice_number}
-                        customerPhone={invoice.party_id} // Need to fetch party details for phone? Or assuming it's in party_name? 
+                        token={invoice.shareToken}
+                        invoiceNumber={invoice.invoiceNumber}
+                        customerPhone={invoice.party?.phone || ""} 
                     // Actually schema has party_name cache, but phone is in parties table. 
                     // Let's pass empty string for now or fetch party if critical.
                     // Ideally we should just let user type phone in whatsapp.

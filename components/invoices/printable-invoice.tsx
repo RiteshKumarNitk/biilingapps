@@ -102,10 +102,10 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
         window.print()
     }
 
-    const calculatedSubtotal = items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
+    const calculatedSubtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const calculatedDiscount = items.reduce((acc, item) => acc + (item.discount || 0), 0)
-    const calculatedTax = items.reduce((acc, item) => acc + (item.tax_amount || 0), 0)
-    const grandTotal = invoice.grand_total || 0
+    const calculatedTax = items.reduce((acc, item) => acc + (item.taxAmount || 0), 0)
+    const grandTotal = invoice.grandTotal || 0
     const amountInWords = toWords(grandTotal).toUpperCase()
 
     // ----------------------------------------------------------------------
@@ -166,7 +166,7 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                             </div>
                             <div className="w-1/2 flex">
                                 <div className="flex-1 p-2 space-y-1">
-                                    <div className="flex justify-between"><span className="font-semibold">Invoice No:</span> <span>{invoice.invoice_number}</span></div>
+                                    <div className="flex justify-between"><span className="font-semibold">Invoice No:</span> <span>{invoice.invoiceNumber}</span></div>
                                     <div className="flex justify-between"><span className="font-semibold">Date:</span> <span>{format(new Date(invoice.date), 'dd-MM-yyyy')}</span></div>
                                     <div className="flex justify-between"><span className="font-semibold">Place of Supply:</span> <span>{invoice.place_of_supply || tenant.state || '-'}</span></div>
                                 </div>
@@ -182,17 +182,17 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                         <div className={`flex border-b ${styles.border}`}>
                             <div className={`w-1/2 p-2 border-r ${styles.border}`}>
                                 <div className={`font-bold border-b ${styles.border} -mx-2 px-2 pb-1 mb-1 ${styles.bg}`}>BILL TO</div>
-                                <p className="font-bold uppercase">{invoice.party_name}</p>
-                                <p className="whitespace-pre-wrap">{invoice.party_address}</p>
+                                <p className="font-bold uppercase">{invoice.partyName}</p>
+                                <p className="whitespace-pre-wrap">{invoice.partyAddress}</p>
                                 <div className="mt-1">
-                                    {invoice.party_phone && <p>Ph: {invoice.party_phone}</p>}
+                                    {invoice.partyPhone && <p>Ph: {invoice.partyPhone}</p>}
                                     {invoice.party_gstin && <p>GSTIN: <span className="font-semibold">{invoice.party_gstin}</span></p>}
                                 </div>
                             </div>
                             <div className="w-1/2 p-2">
                                 <div className={`font-bold border-b ${styles.border} -mx-2 px-2 pb-1 mb-1 ${styles.bg}`}>SHIP TO</div>
-                                <p className="font-bold uppercase">{invoice.party_name}</p>
-                                <p className="whitespace-pre-wrap">{invoice.shipping_address || invoice.party_address}</p>
+                                <p className="font-bold uppercase">{invoice.partyName}</p>
+                                <p className="whitespace-pre-wrap">{invoice.shippingAddress || invoice.partyAddress}</p>
                             </div>
                         </div>
 
@@ -215,14 +215,14 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                                     <tr key={item.id} className={`border-b ${styles.border} last:border-b-${accent === 'black' ? 'black' : styles.border.replace('border-', '')}`}>
                                         <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{i + 1}</td>
                                         <td className={`border-r ${styles.border} px-2 py-1 align-top font-medium`}>
-                                            {item.products?.name || item.description}
+                                            {item.product?.name || item.description}
                                         </td>
-                                        {showHSN && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.products?.hsn_code || '-'}</td>}
+                                        {showHSN && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.product?.hsnCode || '-'}</td>}
                                         <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.quantity} {item.unit}</td>
-                                        <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.unit_price}</td>
+                                        <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.unitPrice}</td>
                                         {showDiscount && <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.discount || '-'}</td>}
-                                        {showGST && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.gst_rate}%</td>}
-                                        <td className="px-2 py-1 text-right align-top font-semibold">{item.total_amount}</td>
+                                        {showGST && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.gstRate}%</td>}
+                                        <td className="px-2 py-1 text-right align-top font-semibold">{item.totalAmount}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -247,8 +247,8 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                                 <div className={`flex justify-between p-1 px-2 border-b ${styles.border}`}><span>Discount:</span><span>₹{calculatedDiscount.toFixed(2)}</span></div>
                                 {calculatedTax > 0 && <div className={`flex justify-between p-1 px-2 border-b ${styles.border}`}><span>Tax (GST):</span><span>₹{calculatedTax.toFixed(2)}</span></div>}
                                 <div className={`flex justify-between p-1 px-2 border-b ${styles.border} ${styles.bg} font-bold text-sm`}><span>Total:</span><span>₹{grandTotal.toFixed(2)}</span></div>
-                                <div className={`flex justify-between p-1 px-2 border-b ${styles.border} text-green-700`}><span>Received:</span><span>₹{invoice.payment_status === 'paid' ? grandTotal.toFixed(2) : '0.00'}</span></div>
-                                <div className={`flex justify-between p-1 px-2 text-red-600 font-semibold border-b ${styles.border}`}><span>Balance:</span><span>₹{invoice.payment_status === 'paid' ? '0.00' : grandTotal.toFixed(2)}</span></div>
+                                <div className={`flex justify-between p-1 px-2 border-b ${styles.border} text-green-700`}><span>Received:</span><span>₹{invoice.paymentStatus === 'paid' ? grandTotal.toFixed(2) : '0.00'}</span></div>
+                                <div className={`flex justify-between p-1 px-2 text-red-600 font-semibold border-b ${styles.border}`}><span>Balance:</span><span>₹{invoice.paymentStatus === 'paid' ? '0.00' : grandTotal.toFixed(2)}</span></div>
 
                                 <div className="flex flex-col items-center p-2 pt-4">
                                     <p className="text-[10px] font-bold text-right w-full mb-1">For {tenant.name}</p>
@@ -282,7 +282,7 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                 <div className="text-right">
                     <h2 className="text-4xl font-light text-slate-300 mb-4">INVOICE</h2>
                     <div className="space-y-1">
-                        <p><span className="text-slate-400">Invoice:</span> <span className="font-semibold">{invoice.invoice_number}</span></p>
+                        <p><span className="text-slate-400">Invoice:</span> <span className="font-semibold">{invoice.invoiceNumber}</span></p>
                         <p><span className="text-slate-400">Date:</span> <span className="font-semibold">{format(new Date(invoice.date), 'dd MMM yyyy')}</span></p>
                     </div>
                 </div>
@@ -290,14 +290,14 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
             <div className="grid grid-cols-2 gap-8 mb-8">
                 <div>
                     <h3 className="text-teal-600 font-bold uppercase text-[10px] mb-2">Bill To</h3>
-                    <p className="font-bold text-lg">{invoice.party_name}</p>
-                    <p className="text-slate-500 whitespace-pre-line">{invoice.party_address}</p>
+                    <p className="font-bold text-lg">{invoice.partyName}</p>
+                    <p className="text-slate-500 whitespace-pre-line">{invoice.partyAddress}</p>
                     {invoice.party_gstin && <p className="text-slate-500 text-[10px] mt-1">GSTIN: {invoice.party_gstin}</p>}
                 </div>
             </div>
             <table className="w-full mb-8">
                 <thead><tr className="bg-teal-50 text-teal-800 text-left"><th className="p-3">Item</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Price</th><th className="p-3 text-right">Total</th></tr></thead>
-                <tbody>{items.map((item) => (<tr key={item.id}><td className="p-3 font-medium">{item.products?.name || item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{item.unit_price}</td><td className="p-3 text-right">{item.total_amount}</td></tr>))}</tbody>
+                <tbody>{items.map((item) => (<tr key={item.id}><td className="p-3 font-medium">{item.product?.name || item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{item.unitPrice}</td><td className="p-3 text-right">{item.totalAmount}</td></tr>))}</tbody>
             </table>
             <div className="flex justify-between items-end border-t pt-8">
                 <div className="max-w-xs">
@@ -320,16 +320,16 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
         <div className="w-full text-slate-900 font-sans text-xs">
             <div className="bg-slate-900 text-white p-8 flex justify-between items-center">
                 <div><h1 className="text-2xl font-bold uppercase">{tenant.name}</h1><p>{tenant.address}</p></div>
-                <div className="text-right"><p className="text-orange-500 font-bold uppercase tracking-widest">Invoice</p><p className="text-xl">{invoice.invoice_number}</p></div>
+                <div className="text-right"><p className="text-orange-500 font-bold uppercase tracking-widest">Invoice</p><p className="text-xl">{invoice.invoiceNumber}</p></div>
             </div>
             <div className="p-8">
                 <div className="flex justify-between mb-8">
-                    <div><p className="text-slate-500 uppercase text-[10px] font-bold mb-1">Billed To</p><h3 className="font-bold text-lg">{invoice.party_name}</h3><p className="text-slate-600">{invoice.party_address}</p></div>
+                    <div><p className="text-slate-500 uppercase text-[10px] font-bold mb-1">Billed To</p><h3 className="font-bold text-lg">{invoice.partyName}</h3><p className="text-slate-600">{invoice.partyAddress}</p></div>
                     <div className="text-right space-y-1"><p><span className="text-slate-500">Date:</span> <span className="font-semibold">{format(new Date(invoice.date), 'dd MMM yyyy')}</span></p></div>
                 </div>
                 <table className="w-full border-b-2 border-slate-900 mb-8">
                     <thead><tr className="text-orange-600 border-b-2 border-orange-100 uppercase text-[10px] text-left"><th className="py-2">Item</th><th className="py-2 text-right">Qty</th><th className="py-2 text-right">Price</th><th className="py-2 text-right">Total</th></tr></thead>
-                    <tbody>{items.map((item) => (<tr key={item.id} className="border-b border-slate-100"><td className="py-3 font-medium">{item.products?.name || item.description}</td><td className="py-3 text-right">{item.quantity}</td><td className="py-3 text-right">{item.unit_price}</td><td className="py-3 text-right font-bold">{item.total_amount}</td></tr>))}</tbody>
+                    <tbody>{items.map((item) => (<tr key={item.id} className="border-b border-slate-100"><td className="py-3 font-medium">{item.product?.name || item.description}</td><td className="py-3 text-right">{item.quantity}</td><td className="py-3 text-right">{item.unitPrice}</td><td className="py-3 text-right font-bold">{item.totalAmount}</td></tr>))}</tbody>
                 </table>
                 <div className="flex justify-end"><div className="w-64 space-y-2"><div className="flex justify-between font-bold text-xl border-t-2 border-slate-900 pt-2"><span>Total</span><span>₹{grandTotal.toFixed(2)}</span></div></div></div>
             </div>

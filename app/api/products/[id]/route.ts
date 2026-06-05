@@ -1,18 +1,19 @@
-import { NextResponse } from 'next/server'
-import { productService } from '@/lib/services/product.service'
+import { NextResponse, NextRequest } from 'next/server'
+import ProductService from '@/lib/services/product.service'
 
 export async function GET(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const tenantId = req.headers.get('x-tenant-id')
     
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID required' }, { status: 400 })
     }
 
-    const product = await productService.getProductById(tenantId, params.id)
+    const product = await ProductService.getById(id, tenantId)
     
     if (!product) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
@@ -25,10 +26,11 @@ export async function GET(
 }
 
 export async function PUT(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const tenantId = req.headers.get('x-tenant-id')
     
     if (!tenantId) {
@@ -36,9 +38,9 @@ export async function PUT(
     }
 
     const body = await req.json()
-    const result = await productService.updateProduct(tenantId, params.id, body)
+    const result = await ProductService.update(id, tenantId, body)
     
-    if (result.count === 0) {
+    if (!result) {
       return NextResponse.json({ error: 'Product not found or not updated' }, { status: 404 })
     }
 
@@ -49,19 +51,20 @@ export async function PUT(
 }
 
 export async function DELETE(
-  req: Request,
-  { params }: { params: { id: string } }
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const tenantId = req.headers.get('x-tenant-id')
     
     if (!tenantId) {
       return NextResponse.json({ error: 'Tenant ID required' }, { status: 400 })
     }
 
-    const result = await productService.deleteProduct(tenantId, params.id)
+    const result = await ProductService.delete(id, tenantId)
     
-    if (result.count === 0) {
+    if (!result) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 })
     }
 

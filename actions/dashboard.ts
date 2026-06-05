@@ -1,6 +1,6 @@
 'use server'
 
-import DashboardService from '@/src/services/dashboard.service'
+import DashboardService from '@/lib/services/dashboard.service'
 
 export async function getDashboardStats(month?: number, year?: number) {
   return DashboardService.getDashboardStats(month, year)

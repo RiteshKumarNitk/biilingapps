@@ -99,7 +99,7 @@ export async function createPaymentIn(data: {
             tenantId: user.tenantId,
             partyId: data.party_id,
             amount: data.amount,
-            mode: data.mode,
+            mode: data.mode.toUpperCase() as any,
             transactionRef: data.payment_number || data.transaction_ref,
             createdAt: data.date,
             notes: data.notes

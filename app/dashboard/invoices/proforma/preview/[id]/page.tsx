@@ -6,9 +6,9 @@ import { redirect } from 'next/navigation'
 import { InvoicePreviewWrapper } from '@/components/invoice-engine/invoice-preview-wrapper'
 
 interface PageProps {
-    params: {
+    params: Promise<{
         id: string
-    }
+    }>
 }
 
 async function getProformaData(id: string): Promise<InvoiceData> {
@@ -16,7 +16,7 @@ async function getProformaData(id: string): Promise<InvoiceData> {
 
     const q = await prisma.quotation.findUnique({
         where: { id, tenantId: user.tenantId },
-        include: { items: true }
+        include: { quotationItems: true }
     })
 
     if (!q) throw new Error('Document not found')
@@ -44,7 +44,7 @@ async function getProformaData(id: string): Promise<InvoiceData> {
             name: q.partyName || 'Cash Sale',
             address: q.partyAddress || 'Address Line 1\nCity, State',
         },
-        items: q.items.map((i: any, idx: number) => ({
+        items: q.quotationItems.map((i: any, idx: number) => ({
             id: i.id,
             name: i.description,
             quantity: Number(i.quantity),
@@ -67,7 +67,8 @@ async function getProformaData(id: string): Promise<InvoiceData> {
 
 export default async function PreviewPage({ params }: PageProps) {
     try {
-        const data = await getProformaData(params.id)
+        const resolvedParams = await params;
+        const data = await getProformaData(resolvedParams.id)
 
         // We render a client component that takes over the screen
         // In Next.js App Router, we can just render the preview component 

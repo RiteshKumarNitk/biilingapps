@@ -20,7 +20,7 @@ export function DownloadButton({ invoice, items, tenant }: DownloadButtonProps) 
 
     const handlePrint = useReactToPrint({
         contentRef: componentRef,
-        documentTitle: `Invoice-${invoice.invoice_number}`,
+        documentTitle: `Invoice-${invoice.invoiceNumber}`,
         onBeforeGetContent: () => {
             setIsPrinting(true)
             return Promise.resolve()

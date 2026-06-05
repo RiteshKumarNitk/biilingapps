@@ -25,19 +25,19 @@ export default async function EditSaleOrderPage({ params }: PageProps) {
     }
 
     const initialData = {
-        order_number: order.order_number,
-        party_id: order.party_id,
+        order_number: order.orderNumber,
+        party_id: order.partyId,
         date: order.date,
-        due_date: order.due_date,
+        due_date: order.dueDate,
         notes: order.notes,
         items: items.map((item: any) => ({
-            product_id: item.product_id || undefined,
+            product_id: item.productId || undefined,
             description: item.description,
             quantity: item.quantity,
-            unit_price: item.unit_price,
-            gst_rate: item.gst_rate,
-            tax_amount: item.tax_amount,
-            total_amount: item.total_amount
+            unit_price: item.unitPrice,
+            gst_rate: item.gstRate,
+            tax_amount: item.taxAmount,
+            total_amount: item.totalAmount
         }))
     }
 

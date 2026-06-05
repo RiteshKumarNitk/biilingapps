@@ -1,30 +1,27 @@
-
 'use server'
 
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
+import prisma from '@/lib/prisma'
 
 export async function getPublicInvoice(token: string) {
-    const cookieStore = await cookies()
+    if (!token) return null
 
-    const supabase = createServerClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-        {
-            cookies: {
-                getAll() { return cookieStore.getAll() },
-                setAll(cookiesToSet) {
-                    // Read-only
-                },
-            },
-        }
-    )
-
-    const { data, error } = await supabase.rpc('get_invoice_by_token', { token })
-
-    if (error) {
-        console.error('RPC Error:', error)
+    try {
+        const invoice = await prisma.invoice.findFirst({
+            where: { shareToken: token },
+            include: {
+                tenant: true,
+                party: true,
+                invoiceItems: {
+                    include: {
+                        product: true
+                    }
+                }
+            }
+        })
+        
+        return invoice
+    } catch (error) {
+        console.error('Error fetching public invoice:', error)
         return null
     }
-    return data
 }

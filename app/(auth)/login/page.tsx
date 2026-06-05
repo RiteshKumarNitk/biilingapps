@@ -19,7 +19,7 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const response = await apiClient.post('/auth/login', { email, password })
+      const response: any = await apiClient.post('/auth/login', { email, password })
       // Assuming the API returns { user, accessToken } and sets refresh token in cookie
       // We'll update the auth context via the login function from useAuth hook
       await login(response.accessToken, response.user)

@@ -173,8 +173,8 @@ export default async function ProformaInvoicePage({
                             </TableRow>
                         ) : (
                             quotations.map((q) => {
-                                const isConverted = q.status === 'converted'
-                                const isOpen = q.status === 'open' || q.status === 'sent' // 'sent' is default for open
+                                const isConverted = q.status === 'CONVERTED'
+                                const isOpen = q.status === 'DRAFT' || q.status === 'SENT' // 'sent' is default for open
 
                                 let statusVariant: "default" | "secondary" | "destructive" | "outline" = "outline"
                                 let statusClass = ""
@@ -192,18 +192,18 @@ export default async function ProformaInvoicePage({
                                             {format(new Date(q.date), 'dd MMM yyyy')}
                                         </TableCell>
                                         <TableCell className="py-3 text-sm text-slate-700 font-medium">
-                                            {q.quotation_number}
+                                            {q.quotationNumber}
                                         </TableCell>
                                         <TableCell className="py-3">
                                             <div className="flex items-center gap-2">
                                                 <div className="h-6 w-6 rounded-full bg-indigo-50 flex items-center justify-center text-[10px] font-bold text-indigo-600 border border-indigo-100 uppercase">
-                                                    {(q.party_name || 'U').substring(0, 2)}
+                                                    {(q.partyName || 'U').substring(0, 2)}
                                                 </div>
-                                                <span className="text-sm font-medium text-slate-700">{q.party_name}</span>
+                                                <span className="text-sm font-medium text-slate-700">{q.partyName}</span>
                                             </div>
                                         </TableCell>
                                         <TableCell className="py-3 text-sm font-bold text-slate-800 text-right">
-                                            {q.grand_total.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
+                                            {q.grandTotal.toLocaleString('en-IN', { style: 'currency', currency: 'INR' })}
                                         </TableCell>
                                         <TableCell className="py-3">
                                             <Badge variant={statusVariant} className={`capitalize font-normal px-2 py-0.5 ${statusClass}`}>

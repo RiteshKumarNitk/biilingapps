@@ -1,29 +1,30 @@
 import { PrismaClient } from '@prisma/client'
 
-// PrismaClient is attached to the `global` object in development to prevent
-// exhausting your database connection limit.
-//
-// Learn more:
-// https://pris.ly/d/help/next-js-best-practices
-
 import { Pool } from 'pg'
 import { PrismaPg } from '@prisma/adapter-pg'
 
 let prisma: PrismaClient
 
-if (process.env.NODE_ENV === 'production') {
+declare global {
+  var prisma: PrismaClient | undefined
+}
+
+const getPrismaClient = () => {
+  if (!process.env.DATABASE_URL) {
+    console.warn("DATABASE_URL is missing. Using dummy URL for build phase.")
+    process.env.DATABASE_URL = "postgresql://dummy:dummy@localhost:5432/dummy"
+  }
   const pool = new Pool({ connectionString: process.env.DATABASE_URL })
   const adapter = new PrismaPg(pool)
-  prisma = new PrismaClient({ adapter })
+  return new PrismaClient({ adapter })
+}
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = getPrismaClient()
 } else {
-  // @ts-ignore
   if (!global.prisma) {
-    // @ts-ignore
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    const adapter = new PrismaPg(pool)
-    global.prisma = new PrismaClient({ adapter })
+    global.prisma = getPrismaClient()
   }
-  // @ts-ignore
   prisma = global.prisma
 }
 

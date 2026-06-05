@@ -101,13 +101,13 @@ export default function CreateQuotationPage() {
             setBillingName(party.name)
             setPhoneNumber(party.phone || '')
             setBillingAddress(party.address || '')
-            setSelectedPartyBalance(party.current_balance || 0)
+            setSelectedPartyBalance(party.currentBalance || 0)
 
             try {
                 const freshParty = await getParty(id)
                 if (freshParty) {
                     setParties(prev => prev.map(p => p.id === id ? freshParty : p))
-                    setSelectedPartyBalance(freshParty.current_balance || 0)
+                    setSelectedPartyBalance(freshParty.currentBalance || 0)
                 }
             } catch (e) {
                 console.error("Failed to refresh party balance", e)

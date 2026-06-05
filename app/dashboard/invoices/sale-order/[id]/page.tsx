@@ -29,13 +29,13 @@ export default async function SaleOrderDetailsPage({ params }: PageProps) {
                     </Link>
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-slate-900 flex items-center gap-2">
-                            Sale Order <span className="text-slate-400 font-normal text-lg">#{order.order_number}</span>
+                            Sale Order <span className="text-slate-400 font-normal text-lg">#{order.orderNumber}</span>
                         </h1>
                     </div>
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <SaleOrderActions orderId={order.id} orderNumber={order.order_number} status={order.status} />
+                    <SaleOrderActions orderId={order.id} orderNumber={order.orderNumber} status={order.status} />
                 </div>
             </div>
 

@@ -83,10 +83,10 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
         window.print()
     }
 
-    const calculatedSubtotal = items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
+    const calculatedSubtotal = items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0)
     const calculatedDiscount = items.reduce((acc, item) => acc + (item.discount || 0), 0)
-    const calculatedTax = items.reduce((acc, item) => acc + (item.tax_amount || 0), 0)
-    const grandTotal = order.grand_total || 0
+    const calculatedTax = items.reduce((acc, item) => acc + (item.taxAmount || 0), 0)
+    const grandTotal = order.grandTotal || 0
     const amountInWords = toWords(grandTotal).toUpperCase()
 
     // ----------------------------------------------------------------------
@@ -136,9 +136,9 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
                             </div>
                             <div className="w-1/2 flex">
                                 <div className="flex-1 p-2 space-y-1">
-                                    <div className="flex justify-between"><span className="font-semibold">Order No:</span> <span>{order.order_number}</span></div>
+                                    <div className="flex justify-between"><span className="font-semibold">Order No:</span> <span>{order.orderNumber}</span></div>
                                     <div className="flex justify-between"><span className="font-semibold">Date:</span> <span>{format(new Date(order.date), 'dd-MM-yyyy')}</span></div>
-                                    <div className="flex justify-between"><span className="font-semibold">Due Date:</span> <span>{order.due_date ? format(new Date(order.due_date), 'dd-MM-yyyy') : '-'}</span></div>
+                                    <div className="flex justify-between"><span className="font-semibold">Due Date:</span> <span>{order.dueDate ? format(new Date(order.dueDate), 'dd-MM-yyyy') : '-'}</span></div>
                                 </div>
                                 {tenant.logo_url && (
                                     <div className="w-24 p-1 flex items-start justify-center">
@@ -151,7 +151,7 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
                         <div className={`flex border-b ${styles.border}`}>
                             <div className={`w-1/2 p-2 border-r ${styles.border}`}>
                                 <div className={`font-bold border-b ${styles.border} -mx-2 px-2 pb-1 mb-1 ${styles.bg}`}>BILL TO</div>
-                                <p className="font-bold uppercase">{order.party_name}</p>
+                                <p className="font-bold uppercase">{order.partyName}</p>
                                 <p className="whitespace-pre-wrap">{order.parties?.address}</p>
                                 <div className="mt-1">
                                     {order.parties?.phone && <p>Ph: {order.parties.phone}</p>}
@@ -160,7 +160,7 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
                             </div>
                             <div className="w-1/2 p-2">
                                 <div className={`font-bold border-b ${styles.border} -mx-2 px-2 pb-1 mb-1 ${styles.bg}`}>SHIP TO</div>
-                                <p className="font-bold uppercase">{order.party_name}</p>
+                                <p className="font-bold uppercase">{order.partyName}</p>
                                 <p className="whitespace-pre-wrap">{order.parties?.address}</p>
                             </div>
                         </div>
@@ -187,10 +187,10 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
                                         </td>
                                         {showHSN && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.products?.hsn_code || '-'}</td>}
                                         <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.quantity} {item.unit}</td>
-                                        <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.unit_price}</td>
+                                        <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.unitPrice}</td>
                                         {showDiscount && <td className={`border-r ${styles.border} px-1 py-1 text-right align-top`}>{item.discount || '-'}</td>}
-                                        {showGST && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.gst_rate}%</td>}
-                                        <td className="px-2 py-1 text-right align-top font-semibold">{item.total_amount}</td>
+                                        {showGST && <td className={`border-r ${styles.border} px-1 py-1 text-center align-top`}>{item.gstRate}%</td>}
+                                        <td className="px-2 py-1 text-right align-top font-semibold">{item.totalAmount}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -252,14 +252,14 @@ export function PrintableSaleOrder({ order, items, tenant }: PrintableSaleOrderP
                 <div className="text-right">
                     <h2 className="text-4xl font-light text-slate-300 mb-4">SALE ORDER</h2>
                     <div className="space-y-1">
-                        <p><span className="text-slate-400">Order #:</span> <span className="font-semibold">{order.order_number}</span></p>
+                        <p><span className="text-slate-400">Order #:</span> <span className="font-semibold">{order.orderNumber}</span></p>
                         <p><span className="text-slate-400">Date:</span> <span className="font-semibold">{format(new Date(order.date), 'dd MMM yyyy')}</span></p>
                     </div>
                 </div>
             </div>
             <table className="w-full mb-8">
                 <thead><tr className="bg-teal-50 text-teal-800 text-left"><th className="p-3">Item</th><th className="p-3 text-right">Qty</th><th className="p-3 text-right">Price</th><th className="p-3 text-right">Total</th></tr></thead>
-                <tbody>{items.map((item, i) => (<tr key={i}><td className="p-3 font-medium">{item.products?.name || item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{item.unit_price}</td><td className="p-3 text-right">{item.total_amount}</td></tr>))}</tbody>
+                <tbody>{items.map((item, i) => (<tr key={i}><td className="p-3 font-medium">{item.products?.name || item.description}</td><td className="p-3 text-right">{item.quantity}</td><td className="p-3 text-right">{item.unitPrice}</td><td className="p-3 text-right">{item.totalAmount}</td></tr>))}</tbody>
             </table>
             <div className="flex justify-between items-end border-t pt-8">
                 <div className="max-w-xs">

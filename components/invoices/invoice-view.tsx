@@ -11,7 +11,7 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                     <CardTitle className="text-2xl font-bold">INVOICE</CardTitle>
-                    <p className="text-sm text-muted-foreground">{invoice.invoice_number}</p>
+                    <p className="text-sm text-muted-foreground">{invoice.invoiceNumber}</p>
                 </div>
                 <div className="text-right">
                     <h3 className="font-bold text-lg uppercase">{tenant.name}</h3>
@@ -27,46 +27,46 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                 <div className="flex justify-between gap-8">
                     <div>
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase">Billed To</h4>
-                        <p className="font-bold text-slate-900 text-lg">{invoice.party_name}</p>
+                        <p className="font-bold text-slate-900 text-lg">{invoice.partyName}</p>
                         <div className="text-sm text-slate-600 mt-1 space-y-0.5">
-                            {invoice.party_address && <p className="whitespace-pre-line">{invoice.party_address}</p>}
-                            {(invoice.parties?.city || invoice.parties?.state) && (
-                                <p>{invoice.parties.city}{invoice.parties.city && invoice.parties.state ? ', ' : ''}{invoice.parties.state} {invoice.parties.pincode}</p>
+                            {invoice.partyAddress && <p className="whitespace-pre-line">{invoice.partyAddress}</p>}
+                            {(invoice.party?.city || invoice.party?.state) && (
+                                <p>{invoice.party.city}{invoice.party.city && invoice.party.state ? ', ' : ''}{invoice.party.state} {invoice.party.pincode}</p>
                             )}
 
                             <div className="pt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-500">
-                                {(invoice.party_phone || invoice.parties?.phone) && <p><span className="font-medium">Ph:</span> {invoice.party_phone || invoice.parties?.phone}</p>}
-                                {(invoice.party_email || invoice.parties?.email) && <p><span className="font-medium">Email:</span> {invoice.party_email || invoice.parties?.email}</p>}
+                                {(invoice.partyPhone || invoice.party?.phone) && <p><span className="font-medium">Ph:</span> {invoice.partyPhone || invoice.party?.phone}</p>}
+                                {(invoice.partyEmail || invoice.party?.email) && <p><span className="font-medium">Email:</span> {invoice.partyEmail || invoice.party?.email}</p>}
                             </div>
 
                             <div className="pt-1 flex flex-wrap gap-2">
-                                {(invoice.gstin || invoice.parties?.gstin) && (
+                                {(invoice.gstin || invoice.party?.gstin) && (
                                     <span className="bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-medium">
-                                        GSTIN: {invoice.gstin || invoice.parties?.gstin}
+                                        GSTIN: {invoice.gstin || invoice.party?.gstin}
                                     </span>
                                 )}
-                                {invoice.parties?.pan_number && (
+                                {invoice.party?.panNumber && (
                                     <span className="bg-slate-50 px-2 py-0.5 rounded border border-slate-200 text-[10px] font-medium">
-                                        PAN: {invoice.parties.pan_number}
+                                        PAN: {invoice.party.panNumber}
                                     </span>
                                 )}
                             </div>
                         </div>
                     </div>
-                    {invoice.shipping_address && (
+                    {invoice.shippingAddress && (
                         <div>
                             <h4 className="text-xs font-semibold text-muted-foreground uppercase">Shipped To</h4>
-                            <p className="font-medium text-slate-900">{invoice.party_name}</p>
-                            <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{invoice.shipping_address}</p>
+                            <p className="font-medium text-slate-900">{invoice.partyName}</p>
+                            <p className="text-sm text-slate-600 whitespace-pre-line mt-1">{invoice.shippingAddress}</p>
                         </div>
                     )}
                     <div className="text-right">
                         <h4 className="text-xs font-semibold text-muted-foreground uppercase">Details</h4>
                         <p className="text-sm">Date: {format(new Date(invoice.date), 'dd MMM yyyy')}</p>
-                        <p className="text-sm">Due: {invoice.due_date ? format(new Date(invoice.due_date), 'dd MMM yyyy') : '-'}</p>
+                        <p className="text-sm">Due: {invoice.dueDate ? format(new Date(invoice.dueDate), 'dd MMM yyyy') : '-'}</p>
                         <div className="mt-1">
-                            <Badge variant={invoice.payment_status === 'paid' ? 'default' : 'secondary'}>
-                                {invoice.payment_status.toUpperCase()}
+                            <Badge variant={invoice.paymentStatus === 'paid' ? 'default' : 'secondary'}>
+                                {invoice.paymentStatus.toUpperCase()}
                             </Badge>
                         </div>
                     </div>
@@ -94,14 +94,14 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                             <TableRow key={item.id}>
                                 <TableCell>{index + 1}</TableCell>
                                 <TableCell className="font-medium">{item.description}</TableCell>
-                                <TableCell>{item.products?.hsn_code || '-'}</TableCell>
+                                <TableCell>{item.product?.hsnCode || '-'}</TableCell>
                                 <TableCell className="text-right">{item.quantity}</TableCell>
                                 <TableCell className="text-right">{item.unit || '-'}</TableCell>
-                                <TableCell className="text-right">₹{item.unit_price}</TableCell>
+                                <TableCell className="text-right">₹{item.unitPrice}</TableCell>
                                 <TableCell className="text-right">{item.discount ? `₹${item.discount}` : '-'}</TableCell>
-                                <TableCell className="text-right">{item.gst_rate}%</TableCell>
-                                <TableCell className="text-right">₹{(item.tax_amount || 0).toFixed(2)}</TableCell>
-                                <TableCell className="text-right font-semibold">₹{item.total_amount}</TableCell>
+                                <TableCell className="text-right">{item.gstRate}%</TableCell>
+                                <TableCell className="text-right">₹{(item.taxAmount || 0).toFixed(2)}</TableCell>
+                                <TableCell className="text-right font-semibold">₹{item.totalAmount}</TableCell>
                             </TableRow>
                         ))}
                     </TableBody>
@@ -111,7 +111,7 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                     <div className="w-1/3 space-y-2">
                         <div className="flex justify-between text-sm">
                             <span>Subtotal:</span>
-                            <span>₹{items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0).toFixed(2)}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-red-500">
                             <span>Discount:</span>
@@ -119,12 +119,12 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                         </div>
                         <div className="flex justify-between text-sm">
                             <span>Tax:</span>
-                            <span>₹{items.reduce((acc, item) => acc + (item.tax_amount || 0), 0).toFixed(2)}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.taxAmount || 0), 0).toFixed(2)}</span>
                         </div>
                         <Separator />
                         <div className="flex justify-between font-bold text-lg">
                             <span>Total:</span>
-                            <span>₹{invoice.grand_total.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span>₹{invoice.grandTotal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>
@@ -141,8 +141,8 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
 
                         <div>
                             <h4 className="text-xs font-bold text-slate-500 uppercase mb-2">Terms & Conditions</h4>
-                            {invoice.parties?.terms ? (
-                                <p className="text-sm text-slate-600 whitespace-pre-line bg-blue-50/50 p-3 rounded border border-blue-100">{invoice.parties.terms}</p>
+                            {invoice.party?.terms ? (
+                                <p className="text-sm text-slate-600 whitespace-pre-line bg-blue-50/50 p-3 rounded border border-blue-100">{invoice.party.terms}</p>
                             ) : tenant.settings?.terms ? (
                                 <p className="text-sm text-slate-600 whitespace-pre-line">{tenant.settings.terms}</p>
                             ) : (

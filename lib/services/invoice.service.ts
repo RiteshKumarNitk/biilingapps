@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client'
-import { Invoice, Prisma } from '@prisma/client'
+import { Invoice, InvoiceItem, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
-
-const prisma = new PrismaClient()
+import prisma from '../prisma'
 
 export class InvoiceService {
   /**

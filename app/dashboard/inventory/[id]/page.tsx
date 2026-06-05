@@ -24,8 +24,8 @@ export default async function EditProductPage({
         ...product,
         cost_price: product.costPrice,
         stock_quantity: product.stockQuantity,
-        min_stock_level: product.minStockLevel,
-        low_stock_threshold: product.minStockLevel, // Assuming min_stock_level is low_stock_threshold
+        min_stock_level: product.lowStockThreshold,
+        low_stock_threshold: product.lowStockThreshold,
         gst_rate: product.gstRate,
         hsn_code: product.hsnCode,
         image_url: product.imageUrl,

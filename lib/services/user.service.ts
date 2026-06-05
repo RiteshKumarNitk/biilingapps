@@ -1,8 +1,5 @@
-import { PrismaClient } from '@prisma/client'
-import { UsersProfile, Tenant } from '@prisma/client'
+import prisma from '../prisma'
 import { revalidatePath } from 'next/cache'
-
-const prisma = new PrismaClient()
 
 export class UserService {
   /**
@@ -107,9 +104,9 @@ export class UserService {
         logoUrl: data.logo_url,
         // signatureUrl: data.signature_url, // Not in our schema
         settings: {
-          ...(profile.tenant.settings || {}),
+          ...((profile.tenant.settings as any) || {}),
           terms: data.terms
-        }
+        } as any
       }
     })
 

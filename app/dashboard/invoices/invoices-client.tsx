@@ -21,10 +21,10 @@ import {
 export type Invoice = {
     id: string
     date: string
-    invoice_number: string
-    party_name: string
-    payment_status: 'paid' | 'unpaid' | 'partial'
-    grand_total: number
+    invoiceNumber: string
+    partyName: string
+    paymentStatus: 'PAID' | 'UNPAID' | 'PARTIAL'
+    grandTotal: number
 }
 
 // Columns Definition
@@ -39,38 +39,38 @@ export const columns: ColumnDef<Invoice>[] = [
         ),
     },
     {
-        accessorKey: "invoice_number",
+        accessorKey: "invoiceNumber",
         header: "Invoice #",
         cell: ({ row }) => (
             <div className="font-semibold text-slate-800">
-                {row.getValue("invoice_number")}
+                {row.getValue("invoiceNumber")}
             </div>
         ),
     },
     {
-        accessorKey: "party_name",
+        accessorKey: "partyName",
         header: "Client",
         cell: ({ row }) => (
             <div className="flex items-center gap-2">
                 <div className="h-8 w-8 rounded-full bg-blue-50 flex items-center justify-center text-xs font-bold text-blue-600 border border-blue-100 uppercase">
-                    {(row.getValue("party_name") as string || 'U').substring(0, 2)}
+                    {(row.getValue("partyName") as string || 'U').substring(0, 2)}
                 </div>
-                <span className="font-medium text-slate-700">{row.getValue("party_name")}</span>
+                <span className="font-medium text-slate-700">{row.getValue("partyName")}</span>
             </div>
         ),
     },
     {
-        accessorKey: "payment_status",
+        accessorKey: "paymentStatus",
         header: "Status",
         cell: ({ row }) => {
-            const status = row.getValue("payment_status") as string
+            const status = row.getValue("paymentStatus") as string
             let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
             let className = ""
 
-            if (status === 'paid') {
+            if (status === 'PAID') {
                 className = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
                 variant = "secondary" // using custom class instead of relying purely on variants
-            } else if (status === 'partial') {
+            } else if (status === 'PARTIAL') {
                 className = "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
                 variant = "secondary"
             } else {
@@ -80,16 +80,16 @@ export const columns: ColumnDef<Invoice>[] = [
 
             return (
                 <Badge variant={variant} className={`capitalize font-normal px-2.5 py-0.5 ${className}`}>
-                    {status || "Unpaid"}
+                    {status ? status.toLowerCase() : "Unpaid"}
                 </Badge>
             )
         },
     },
     {
-        accessorKey: "grand_total",
+        accessorKey: "grandTotal",
         header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grand_total"))
+            const amount = parseFloat(row.getValue("grandTotal"))
             return <div className="text-right font-bold text-slate-800">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
         },
     },
@@ -111,8 +111,8 @@ export const columns: ColumnDef<Invoice>[] = [
         enableHiding: false,
         cell: ({ row }) => {
             const invoice = row.original
-            const total = parseFloat(row.getValue("grand_total"))
-            const balance = invoice.payment_status === 'paid' ? 0 : total
+            const total = parseFloat(row.getValue("grandTotal"))
+            const balance = invoice.paymentStatus === 'PAID' ? 0 : total
 
             return (
                 <div className="text-right">
@@ -142,7 +142,7 @@ export const columns: ColumnDef<Invoice>[] = [
                                 </Link>
                             </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => {
-                                navigator.clipboard.writeText(invoice.invoice_number)
+                                navigator.clipboard.writeText(invoice.invoiceNumber)
                             }}>
                                 <Copy className="mr-2 h-4 w-4" /> Copy Invoice #
                             </DropdownMenuItem>

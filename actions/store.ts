@@ -56,7 +56,7 @@ export async function updateOrderStatus(id: string, status: string) {
 
     await prisma.onlineOrder.update({
         where: { id, tenantId: user.tenantId },
-        data: { status: status.toUpperCase() }
+        data: { status: status.toUpperCase() as any }
     })
 
     revalidatePath('/dashboard/orders')

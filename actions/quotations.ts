@@ -55,7 +55,7 @@ export async function getQuotations(
         summary.total += amount
         if (q.status === 'CONVERTED') {
             summary.converted += amount
-        } else if (q.status === 'OPEN' || q.status === 'SENT' || q.status === 'DRAFT') {
+        } else if (q.status === 'SENT' || q.status === 'DRAFT') {
             summary.open += amount
         }
     })
@@ -180,7 +180,7 @@ export async function convertQuotationToInvoice(quotationId: string) {
     const movements = q.quotationItems.map((item: any) => ({
         tenantId: user.tenantId,
         productId: item.productId,
-        type: 'INVOICE',
+        type: 'INVOICE_SENT' as any,
         quantity: -item.quantity,
         referenceId: inv.id,
         notes: `Invoice ${invoiceNumber} (Converted from Quote)`

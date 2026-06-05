@@ -30,7 +30,7 @@ export function ConvertButton({ quotationId, status }: ConvertButtonProps) {
         }
     }
 
-    if (status === 'converted') {
+    if (status === 'CONVERTED') {
         return <Button disabled variant="secondary"><CheckCircle className="mr-2 h-4 w-4" /> Converted</Button>
     }
 

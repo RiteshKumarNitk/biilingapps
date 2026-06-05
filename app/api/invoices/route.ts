@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { invoiceService } from '@/lib/services/invoice.service'
+import InvoiceService from '@/lib/services/invoice.service'
 
 export async function GET(req: Request) {
   try {
@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '50')
 
-    const invoices = await invoiceService.getInvoices(tenantId, page, limit)
+    const invoices = await InvoiceService.getInvoices(tenantId, page, limit)
     
     return NextResponse.json({ invoices })
   } catch (error: any) {
@@ -31,7 +31,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json()
-    const invoice = await invoiceService.createInvoice(tenantId, body)
+    const invoice = await InvoiceService.createInvoice(body, tenantId)
     
     return NextResponse.json({ invoice }, { status: 201 })
   } catch (error: any) {

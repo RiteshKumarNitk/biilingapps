@@ -11,7 +11,7 @@ export function SaleOrderView({ order, items, tenant }: { order: any, items: any
             <CardHeader className="flex flex-row items-start justify-between pb-8">
                 <div>
                     <CardTitle className="text-3xl font-bold text-slate-800">SALE ORDER</CardTitle>
-                    <p className="text-sm font-medium text-slate-500 mt-1"># {order.order_number}</p>
+                    <p className="text-sm font-medium text-slate-500 mt-1"># {order.orderNumber}</p>
                 </div>
                 <div className="text-right">
                     {tenant?.logo_url ? (
@@ -36,7 +36,7 @@ export function SaleOrderView({ order, items, tenant }: { order: any, items: any
                     <div>
                         <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Billed To</h4>
                         <div className="space-y-1">
-                            <p className="font-bold text-slate-900 text-lg">{order.party_name}</p>
+                            <p className="font-bold text-slate-900 text-lg">{order.partyName}</p>
                             {order.parties?.address && <p className="text-sm text-slate-600 whitespace-pre-line">{order.parties.address}</p>}
                             <div className="text-sm text-slate-600">
                                 {order.parties?.city && <span>{order.parties.city}, </span>}
@@ -67,7 +67,7 @@ export function SaleOrderView({ order, items, tenant }: { order: any, items: any
                             </div>
                             <div className="flex justify-between">
                                 <span className="text-sm font-medium text-slate-500">Due Date:</span>
-                                <span className="text-sm font-semibold text-slate-700">{order.due_date ? format(new Date(order.due_date), 'dd MMM yyyy') : '-'}</span>
+                                <span className="text-sm font-semibold text-slate-700">{order.dueDate ? format(new Date(order.dueDate), 'dd MMM yyyy') : '-'}</span>
                             </div>
                             <div className="flex justify-between items-center pt-1">
                                 <span className="text-sm font-medium text-slate-500">Status:</span>
@@ -108,14 +108,14 @@ export function SaleOrderView({ order, items, tenant }: { order: any, items: any
                                     <TableCell className="text-right text-slate-600">
                                         {item.quantity} <span className="text-xs text-slate-400">{item.unit || 'pcs'}</span>
                                     </TableCell>
-                                    <TableCell className="text-right text-slate-600">₹{item.unit_price}</TableCell>
+                                    <TableCell className="text-right text-slate-600">₹{item.unitPrice}</TableCell>
                                     <TableCell className="text-right text-slate-600">
                                         <div className="flex flex-col items-end">
-                                            <span>{item.gst_rate}%</span>
-                                            <span className="text-xs text-slate-400">₹{item.tax_amount?.toFixed(2)}</span>
+                                            <span>{item.gstRate}%</span>
+                                            <span className="text-xs text-slate-400">₹{item.taxAmount?.toFixed(2)}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-right font-medium text-slate-900">₹{item.total_amount?.toFixed(2)}</TableCell>
+                                    <TableCell className="text-right font-medium text-slate-900">₹{item.totalAmount?.toFixed(2)}</TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>
@@ -126,16 +126,16 @@ export function SaleOrderView({ order, items, tenant }: { order: any, items: any
                     <div className="w-full md:w-1/3 space-y-3 bg-slate-50 p-4 rounded-lg">
                         <div className="flex justify-between text-sm text-slate-600">
                             <span>Subtotal</span>
-                            <span>₹{items.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0).toFixed(2)}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.quantity * item.unitPrice), 0).toFixed(2)}</span>
                         </div>
                         <div className="flex justify-between text-sm text-slate-600">
                             <span>Total Tax (GST)</span>
-                            <span>₹{items.reduce((acc, item) => acc + (item.tax_amount || 0), 0).toFixed(2)}</span>
+                            <span>₹{items.reduce((acc, item) => acc + (item.taxAmount || 0), 0).toFixed(2)}</span>
                         </div>
                         <Separator className="bg-slate-200" />
                         <div className="flex justify-between items-center pt-1">
                             <span className="font-bold text-slate-800">Grand Total</span>
-                            <span className="font-bold text-xl text-blue-600">₹{order.grand_total?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                            <span className="font-bold text-xl text-blue-600">₹{order.grandTotal?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
                         </div>
                     </div>
                 </div>
