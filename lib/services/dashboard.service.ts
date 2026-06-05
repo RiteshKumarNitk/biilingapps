@@ -330,7 +330,7 @@ export class DashboardService {
         totalAmount: true,
         product: {
           select: {
-            // category: true // Assuming we don't have category field yet
+            category: true
           }
         }
       }
@@ -340,8 +340,7 @@ export class DashboardService {
 
     if (items) {
       items.forEach((item: any) => {
-        // const cat = item.product?.category || 'Uncategorized'
-        const cat = 'Uncategorized' // Default since we don't have category field
+        const cat = item.product?.category || 'Uncategorized'
         categorySales[cat] = (categorySales[cat] || 0) + (item.totalAmount || 0)
       })
     }

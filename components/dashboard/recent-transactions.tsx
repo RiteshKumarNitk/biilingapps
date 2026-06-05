@@ -18,19 +18,19 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                     <div className="flex items-center space-x-4">
                         <Avatar className="h-9 w-9">
                             <AvatarFallback className="bg-blue-50 text-blue-600 text-xs font-semibold">
-                                {tx.party_name?.substring(0, 2).toUpperCase()}
+                                {tx.partyName?.substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                         </Avatar>
                         <div className="space-y-1">
-                            <p className="text-sm font-medium leading-none">{tx.party_name}</p>
-                            <p className="text-xs text-muted-foreground">{tx.party?.email || tx.invoice_number}</p>
+                            <p className="text-sm font-medium leading-none">{tx.partyName}</p>
+                            <p className="text-xs text-muted-foreground">{tx.party?.email || tx.invoiceNumber}</p>
                         </div>
                     </div>
                     <div className="text-right space-y-1">
-                        <p className="text-sm font-bold text-slate-900">+₹{tx.grand_total.toLocaleString()}</p>
+                        <p className="text-sm font-bold text-slate-900">+₹{tx.grandTotal?.toLocaleString()}</p>
                         <div className="flex items-center justify-end gap-2">
                             <span className="text-[10px] text-muted-foreground">
-                                {formatDistanceToNow(new Date(tx.created_at), { addSuffix: true })}
+                                {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
                             </span>
                             <Badge variant={
                                 tx.status === 'paid' ? 'default' :

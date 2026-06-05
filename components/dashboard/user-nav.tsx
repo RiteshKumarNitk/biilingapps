@@ -28,8 +28,8 @@ export function UserNav({ user, profile }: { user?: any; profile?: any }) {
         router.push('/login')
     }
 
-    const initials = profile?.first_name ? `${profile.first_name[0]}${profile.last_name?.[0] || ''}` : user?.email?.[0]?.toUpperCase() || 'U'
-    const name = profile?.first_name ? `${profile.first_name} ${profile.last_name || ''}` : 'User'
+    const initials = profile?.fullName ? profile.fullName.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : user?.email?.[0]?.toUpperCase() || 'U'
+    const name = profile?.fullName || 'User'
     const email = user?.email || 'user@example.com'
 
     return (
@@ -37,7 +37,7 @@ export function UserNav({ user, profile }: { user?: any; profile?: any }) {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                     <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.user_metadata?.avatar_url} alt={name} />
+                        <AvatarImage src={user?.avatarUrl} alt={name} />
                         <AvatarFallback>{initials}</AvatarFallback>
                     </Avatar>
                 </Button>

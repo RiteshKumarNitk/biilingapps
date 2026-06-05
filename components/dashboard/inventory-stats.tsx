@@ -37,7 +37,7 @@ export function InventoryStats({
                                         </div>
                                     </div>
                                     <span className="text-red-600 font-bold text-sm bg-red-50 px-2 py-0.5 rounded">
-                                        {item.stock_quantity} left
+                                        {item.stockQuantity} left
                                     </span>
                                 </div>
                             ))}
