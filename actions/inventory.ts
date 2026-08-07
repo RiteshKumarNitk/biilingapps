@@ -148,7 +148,7 @@ export async function getProductTransactions(productId: string) {
 
 export async function bulkUpdateCategory(productIds: string[], newCategory: string) {
     const user = await requireAuth()
-    
+
     await prisma.product.updateMany({
         where: { id: { in: productIds }, tenantId: user.tenantId },
         data: { category: newCategory }
@@ -191,9 +191,9 @@ export async function adjustStock(productId: string, quantity: number, type: 'AD
 
 export async function getAdjustmentHistory() {
     const user = await requireAuth()
-    
+
     const movements = await prisma.stockMovement.findMany({
-        where: { 
+        where: {
             tenantId: user.tenantId,
             type: 'ADJUSTMENT'
         },
@@ -271,7 +271,7 @@ export async function bulkAdjustStock(updates: BulkStockUpdate[]) {
 
 export async function renameCategory(oldName: string, newName: string) {
     const user = await requireAuth()
-    
+
     await prisma.product.updateMany({
         where: { category: oldName, tenantId: user.tenantId },
         data: { category: newName }
@@ -282,7 +282,7 @@ export async function renameCategory(oldName: string, newName: string) {
 
 export async function deleteCategory(name: string) {
     const user = await requireAuth()
-    
+
     await prisma.product.updateMany({
         where: { category: name, tenantId: user.tenantId },
         data: { category: 'General' }
@@ -293,7 +293,7 @@ export async function deleteCategory(name: string) {
 
 export async function renameUnit(oldName: string, newName: string) {
     const user = await requireAuth()
-    
+
     await prisma.product.updateMany({
         where: { unit: oldName, tenantId: user.tenantId },
         data: { unit: newName }
@@ -304,7 +304,7 @@ export async function renameUnit(oldName: string, newName: string) {
 
 export async function deleteUnit(name: string) {
     const user = await requireAuth()
-    
+
     await prisma.product.updateMany({
         where: { unit: name, tenantId: user.tenantId },
         data: { unit: 'pcs' }
