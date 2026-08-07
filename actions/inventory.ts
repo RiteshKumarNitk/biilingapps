@@ -116,7 +116,7 @@ export async function getCategories() {
     })
 
     const categoryMap = new Map<string, number>()
-    products.forEach(p => {
+    products.forEach((p: any) => {
         const cat = p.category || 'Uncategorized'
         categoryMap.set(cat, (categoryMap.get(cat) || 0) + 1)
     })
@@ -131,8 +131,8 @@ export async function getUnits() {
         select: { unit: true }
     })
 
-    const units = Array.from(new Set(products.map(p => p.unit).filter(Boolean) as string[]))
-    return units.map(u => ({ name: u, symbol: u, decimal: true }))
+    const units = Array.from(new Set(products.map((p: any) => p.unit).filter(Boolean) as string[]))
+    return units.map((u: any) => ({ name: u, symbol: u, decimal: true }))
 }
 
 export async function getProductTransactions(productId: string) {
