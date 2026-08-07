@@ -29,7 +29,7 @@ export function TransactionTable({ items, setItems, products }: TransactionTable
         const gst = item.gstRate || 0
         const disc = item.discountValue || 0
 
-        let baseAmount = qty * price
+        const baseAmount = qty * price
 
         // Discount
         let discountAmount = 0
@@ -40,7 +40,7 @@ export function TransactionTable({ items, setItems, products }: TransactionTable
         }
 
         // Apply Discount
-        let valueAfterDiscount = baseAmount - discountAmount
+        const valueAfterDiscount = baseAmount - discountAmount
 
         let taxAmount = 0
         let finalAmount = 0

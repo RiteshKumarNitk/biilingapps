@@ -277,8 +277,8 @@ export default function AddSalePage() {
                     // 2. Normalize to Exclusive if Inclusive
                     let finalUnitPrice = item.price
                     let finalDiscount = discountAmt
-                    let finalTaxAmount = item.taxAmount
-                    let finalAmount = item.amount
+                    const finalTaxAmount = item.taxAmount
+                    const finalAmount = item.amount
 
                     // Note: item.taxAmount is already calculated correctly by the table logic
                     // We just need to adjust unit_price and discount to be ex-tax for consistent DB storage

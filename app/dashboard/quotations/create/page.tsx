@@ -154,8 +154,8 @@ export default function CreateQuotationPage() {
 
                     let finalUnitPrice = item.price
                     let finalDiscount = discountAmt
-                    let finalTaxAmount = item.taxAmount
-                    let finalAmount = item.amount
+                    const finalTaxAmount = item.taxAmount
+                    const finalAmount = item.amount
 
                     if (item.taxType === 'inclusive') {
                         const gstFactor = 1 + ((item.gstRate || 0) / 100)
