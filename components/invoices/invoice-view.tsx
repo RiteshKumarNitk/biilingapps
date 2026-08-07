@@ -2,8 +2,8 @@
 import { format } from 'date-fns'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { StatusBadge } from '@/components/shared'
 
 export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: any[], tenant: any }) {
     return (
@@ -65,9 +65,7 @@ export function InvoiceView({ invoice, items, tenant }: { invoice: any, items: a
                         <p className="text-sm">Date: {format(new Date(invoice.date), 'dd MMM yyyy')}</p>
                         <p className="text-sm">Due: {invoice.dueDate ? format(new Date(invoice.dueDate), 'dd MMM yyyy') : '-'}</p>
                         <div className="mt-1">
-                            <Badge variant={invoice.paymentStatus === 'paid' ? 'default' : 'secondary'}>
-                                {invoice.paymentStatus.toUpperCase()}
-                            </Badge>
+                            <StatusBadge status={invoice.paymentStatus} />
                         </div>
                     </div>
                 </div>

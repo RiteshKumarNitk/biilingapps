@@ -23,6 +23,7 @@ import { format } from 'date-fns'
 import { cn } from '@/lib/utils'
 import { deleteParty } from '@/actions/parties'
 import { toast } from 'sonner'
+import { AmountDisplay } from '@/components/shared'
 import * as XLSX from 'xlsx'
 import {
     useReactTable,
@@ -334,12 +335,12 @@ export function PartyDetails({ party, ledger, isLoading = false, onUpdate }: Par
                                 <RefreshCw className="h-3 w-3" />
                             </Button>
                         </span>
-                        <div className={cn(
-                            "flex items-center gap-2 font-bold text-lg",
-                            computedBalance >= 0 ? "text-green-600" : "text-red-600"
-                        )}>
-                            ₹ {Math.abs(computedBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            <span className="text-xs font-medium text-slate-400">{computedBalance >= 0 ? 'Dr' : 'Cr'}</span>
+                        <div className="flex items-center gap-2 font-bold text-lg">
+                            <AmountDisplay
+                                amount={computedBalance}
+                                colorByValue
+                                signLabels={{ positive: 'Dr', negative: 'Cr' }}
+                            />
                         </div>
                     </div>
 

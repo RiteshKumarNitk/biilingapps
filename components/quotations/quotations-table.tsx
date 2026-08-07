@@ -5,8 +5,8 @@ import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
 import { Eye, Printer, MoreHorizontal, Edit, Trash2, CheckCircle2 } from "lucide-react"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { StatusBadge, AmountDisplay } from "@/components/shared"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -69,36 +69,18 @@ export const columns: ColumnDef<Quotation>[] = [
     {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => {
-            const status = row.getValue("status") as string
-            const isConverted = status === 'converted'
-            const isOpen = status === 'open' || status === 'sent' || status === 'draft'
-
-            let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
-            let className = ""
-
-            if (isConverted) {
-                className = "bg-green-50 text-green-700 hover:bg-green-100 border-green-200"
-                variant = "secondary"
-            } else if (isOpen) {
-                className = "bg-blue-50 text-blue-700 hover:bg-blue-100 border-blue-200"
-                variant = "secondary"
-            }
-
-            return (
-                <Badge variant={variant} className={`capitalize font-normal px-2.5 py-0.5 ${className}`}>
-                    {status || "Draft"}
-                </Badge>
-            )
-        },
+        cell: ({ row }) => (
+            <StatusBadge status={(row.getValue("status") as string) || "draft"} toneMap={{ draft: 'info' }} />
+        ),
     },
     {
         accessorKey: "grand_total",
         header: () => <div className="text-right">Amount</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grand_total"))
-            return <div className="text-right font-bold text-slate-800">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 0 })}</div>
-        },
+        cell: ({ row }) => (
+            <div className="text-right font-bold text-slate-800">
+                <AmountDisplay amount={parseFloat(row.getValue("grand_total"))} decimals={0} />
+            </div>
+        ),
     },
     {
         id: "actions",

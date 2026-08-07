@@ -247,8 +247,8 @@ export function PrintableInvoice({ invoice, items, tenant }: PrintableInvoicePro
                                 <div className={`flex justify-between p-1 px-2 border-b ${styles.border}`}><span>Discount:</span><span>₹{calculatedDiscount.toFixed(2)}</span></div>
                                 {calculatedTax > 0 && <div className={`flex justify-between p-1 px-2 border-b ${styles.border}`}><span>Tax (GST):</span><span>₹{calculatedTax.toFixed(2)}</span></div>}
                                 <div className={`flex justify-between p-1 px-2 border-b ${styles.border} ${styles.bg} font-bold text-sm`}><span>Total:</span><span>₹{grandTotal.toFixed(2)}</span></div>
-                                <div className={`flex justify-between p-1 px-2 border-b ${styles.border} text-green-700`}><span>Received:</span><span>₹{invoice.paymentStatus === 'paid' ? grandTotal.toFixed(2) : '0.00'}</span></div>
-                                <div className={`flex justify-between p-1 px-2 text-red-600 font-semibold border-b ${styles.border}`}><span>Balance:</span><span>₹{invoice.paymentStatus === 'paid' ? '0.00' : grandTotal.toFixed(2)}</span></div>
+                                <div className={`flex justify-between p-1 px-2 border-b ${styles.border} text-green-700`}><span>Received:</span><span>₹{(invoice.paidAmount || 0).toFixed(2)}</span></div>
+                                <div className={`flex justify-between p-1 px-2 text-red-600 font-semibold border-b ${styles.border}`}><span>Balance:</span><span>₹{(grandTotal - (invoice.paidAmount || 0)).toFixed(2)}</span></div>
 
                                 <div className="flex flex-col items-center p-2 pt-4">
                                     <p className="text-[10px] font-bold text-right w-full mb-1">For {tenant.name}</p>

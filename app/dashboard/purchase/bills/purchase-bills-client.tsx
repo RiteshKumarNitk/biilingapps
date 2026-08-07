@@ -6,6 +6,7 @@ import { format } from "date-fns"
 import { Eye, Printer, Share2 } from "lucide-react"
 import Link from "next/link"
 import { DeletePurchaseButton } from "@/components/purchase/delete-purchase-button"
+import { StatusBadge, AmountDisplay } from "@/components/shared"
 
 // Type Definition
 export type PurchaseBill = {
@@ -40,17 +41,16 @@ export const columns: ColumnDef<PurchaseBill>[] = [
     {
         accessorKey: "status",
         header: "STATUS",
-        cell: ({ row }) => (
-            <span className="capitalize">{row.getValue("status")}</span>
-        ),
+        cell: ({ row }) => <StatusBadge status={row.getValue("status")} />,
     },
     {
         accessorKey: "grand_total",
         header: () => <div className="text-right">AMOUNT</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grand_total"))
-            return <div className="text-right font-semibold text-slate-700">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-        },
+        cell: ({ row }) => (
+            <div className="text-right font-semibold text-slate-700">
+                <AmountDisplay amount={parseFloat(row.getValue("grand_total"))} />
+            </div>
+        ),
     },
     {
         id: "actions",
