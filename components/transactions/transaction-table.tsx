@@ -12,6 +12,7 @@ import {
 import { Plus, Trash2, Search } from "lucide-react"
 import { GST_SLABS, TransactionItem } from "./shared"
 import { cn } from "@/lib/utils"
+import { calculateLineItem } from "@/lib/calculations"
 
 interface TransactionTableProps {
     items: TransactionItem[]
@@ -24,49 +25,19 @@ export function TransactionTable({ items, setItems, products }: TransactionTable
 
     // Calculations
     const calculateRow = (item: TransactionItem): TransactionItem => {
-        const qty = item.quantity || 0
-        const price = item.price || 0
-        const gst = item.gstRate || 0
-        const disc = item.discountValue || 0
-
-        const baseAmount = qty * price
-
-        // Discount
-        let discountAmount = 0
-        if (item.discountType === 'percentage') {
-            discountAmount = baseAmount * (disc / 100)
-        } else {
-            discountAmount = disc
-        }
-
-        // Apply Discount
-        const valueAfterDiscount = baseAmount - discountAmount
-
-        let taxAmount = 0
-        let finalAmount = 0
-
-        if (item.taxType === 'exclusive') {
-            // Tax is ADDED on top
-            // Value = (Qty * Price) - Discount
-            // Tax = Value * (GST%)
-            // Total = Value + Tax
-            taxAmount = valueAfterDiscount * (gst / 100)
-            finalAmount = valueAfterDiscount + taxAmount
-        } else {
-            // Price INCLUDES Tax
-            // Meaning valueAfterDiscount IS the final amount the customer pays? 
-            // Usually "Inclusive" means the Price per unit includes tax. 
-            // So Total = (Qty * Price) - Discount. 
-            // We just back-calculate Tax component for display.
-            // Tax = Total - (Total / (1 + GST/100))
-            finalAmount = valueAfterDiscount
-            taxAmount = finalAmount - (finalAmount / (1 + (gst / 100)))
-        }
+        const { taxAmount, totalAmount } = calculateLineItem({
+            quantity: item.quantity || 0,
+            unitPrice: item.price || 0,
+            gstRate: item.gstRate || 0,
+            discountValue: item.discountValue || 0,
+            discountType: item.discountType,
+            taxType: item.taxType,
+        })
 
         return {
             ...item,
-            taxAmount: parseFloat(taxAmount.toFixed(2)),
-            amount: parseFloat(finalAmount.toFixed(2))
+            taxAmount,
+            amount: totalAmount
         }
     }
 

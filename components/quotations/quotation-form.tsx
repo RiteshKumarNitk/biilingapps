@@ -23,6 +23,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { createQuotation } from '@/actions/quotations'
+import { calculateLineItem, calculateDocumentTotals } from '@/lib/calculations'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
@@ -85,8 +86,12 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
         name: 'discount_rate'
     }) || 0
 
-    const subtotal = watchItems.reduce((acc, item) => acc + (item.quantity * item.unit_price), 0)
-    const totalTax = watchItems.reduce((acc, item) => acc + ((item.quantity * item.unit_price) * ((item.gst_rate || 0) / 100)), 0)
+    const lineCalcs = watchItems.map(item => calculateLineItem({
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        gstRate: item.gst_rate || 0,
+    }))
+    const { subtotal, totalGst: totalTax } = calculateDocumentTotals(lineCalcs)
 
     // Discount is calculated on Subtotal
     const discountAmount = (subtotal * watchDiscount) / 100
@@ -97,7 +102,11 @@ export function QuotationForm({ products, parties }: QuotationFormProps) {
             setLoading(true)
             const itemsWithTotals = data.items.map(item => ({
                 ...item,
-                total_amount: (item.quantity * item.unit_price) * (1 + ((item.gst_rate || 0) / 100))
+                total_amount: calculateLineItem({
+                    quantity: item.quantity,
+                    unitPrice: item.unit_price,
+                    gstRate: item.gst_rate || 0,
+                }).totalAmount
             }))
 
             const calcDiscountAmount = (subtotal * (data.discount_rate || 0)) / 100

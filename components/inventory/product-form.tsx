@@ -65,10 +65,7 @@ import { Separator } from '@/components/ui/separator'
 
 import { productSchema, ProductFormValues } from '@/lib/schemas/product'
 import { createProduct, updateProduct, getUnits } from '@/actions/inventory'
-
-const DEFAULT_UNITS = ["pcs", "box", "kg", "ltr", "mtr", "g", "ml", "dz"]
-const CATEGORIES = ["General", "Electronics", "Groceries", "Services", "Hardware"]
-const GST_SLABS = [0, 5, 12, 18, 28]
+import { DEFAULT_UNITS, DEFAULT_PRODUCT_CATEGORIES as CATEGORIES, GST_SLABS } from '@/lib/constants'
 
 interface ProductFormProps {
     initialData?: any

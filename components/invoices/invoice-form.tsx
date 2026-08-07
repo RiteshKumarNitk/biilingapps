@@ -22,6 +22,7 @@ import {
     SelectValue,
 } from '@/components/ui/select'
 import { invoiceSchema, InvoiceFormValues } from '@/lib/schemas/invoice'
+import { calculateLineItem, calculateDocumentTotals } from '@/lib/calculations'
 
 import { getProducts, getUnits } from '@/actions/inventory'
 import { getParties } from '@/actions/parties'
@@ -94,23 +95,28 @@ export function InvoiceForm() {
     })
 
     // Calculate totals
-    const subtotal = watchItems.reduce((acc, item) => acc + ((item.quantity * item.unit_price) - (item.discount || 0)), 0)
-    const totalTax = watchItems.reduce((acc, item) => {
-        const taxable = (item.quantity * item.unit_price) - (item.discount || 0)
-        return acc + (taxable * (item.gst_rate / 100))
-    }, 0)
-    const grandTotal = subtotal + totalTax
+    const lineCalcs = watchItems.map(item => calculateLineItem({
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        gstRate: item.gst_rate,
+        discountValue: item.discount || 0,
+    }))
+    const { subtotal, totalGst: totalTax, grandTotal } = calculateDocumentTotals(lineCalcs)
 
     async function onSubmit(data: InvoiceFormValues) {
         try {
             showLoader()
             const itemsWithTotals = data.items.map(item => {
-                const taxable = (item.quantity * item.unit_price) - (item.discount || 0)
-                const tax = taxable * (item.gst_rate / 100)
+                const { taxAmount, totalAmount } = calculateLineItem({
+                    quantity: item.quantity,
+                    unitPrice: item.unit_price,
+                    gstRate: item.gst_rate,
+                    discountValue: item.discount || 0,
+                })
                 return {
                     ...item,
-                    tax_amount: tax, // Save this
-                    total_amount: taxable + tax
+                    tax_amount: taxAmount,
+                    total_amount: totalAmount
                 }
             })
 

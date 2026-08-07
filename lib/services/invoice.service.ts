@@ -2,6 +2,7 @@ import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import prisma from '../prisma'
 import { InvoiceFormValues } from '../schemas/invoice'
+import { calculateLineItem, calculateDocumentTotals } from '../calculations'
 
 export class InvoiceService {
   /**
@@ -82,17 +83,18 @@ export class InvoiceService {
     // Start transaction
     return await prisma.$transaction(async (tx) => {
       // Recompute item totals server-side rather than trusting client-submitted amounts
-      const items = data.items.map((item) => {
-        const taxable = item.quantity * item.unit_price - (item.discount || 0)
-        const taxAmount = taxable * (item.gst_rate / 100)
-        return {
-          ...item,
-          tax_amount: taxAmount,
-          total_amount: taxable + taxAmount
-        }
-      })
-      const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unit_price - (item.discount || 0)), 0)
-      const grandTotal = items.reduce((acc, item) => acc + item.total_amount, 0)
+      const lineCalcs = data.items.map((item) => calculateLineItem({
+        quantity: item.quantity,
+        unitPrice: item.unit_price,
+        gstRate: item.gst_rate,
+        discountValue: item.discount || 0,
+      }))
+      const items = data.items.map((item, i) => ({
+        ...item,
+        tax_amount: lineCalcs[i].taxAmount,
+        total_amount: lineCalcs[i].totalAmount,
+      }))
+      const { subtotal, grandTotal } = calculateDocumentTotals(lineCalcs)
       const receivedAmount = Math.min(data.received_amount || 0, grandTotal)
 
       // 1. Create Invoice
