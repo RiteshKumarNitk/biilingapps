@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { v2 as cloudinary } from 'cloudinary'
 import { requireAuth } from '@/lib/auth-server'
 
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -16,6 +18,10 @@ export async function POST(req: Request) {
 
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+    }
+
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      return NextResponse.json({ error: 'File too large. Maximum size is 5MB.' }, { status: 413 })
     }
 
     const bytes = await file.arrayBuffer()
