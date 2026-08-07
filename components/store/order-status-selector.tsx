@@ -25,7 +25,7 @@ export function OrderStatusSelector({ id, currentStatus }: { id: string, current
     // Color mapping logic for badge if we weren't using select.
     // Using select for direct action.
     return (
-        <Select defaultValue={currentStatus} onValueChange={handleUpdate}>
+        <Select defaultValue={currentStatus.toLowerCase()} onValueChange={handleUpdate}>
             <SelectTrigger className="w-[130px] h-8">
                 <SelectValue />
             </SelectTrigger>

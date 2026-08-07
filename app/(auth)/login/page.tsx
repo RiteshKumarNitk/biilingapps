@@ -19,12 +19,12 @@ export default function LoginPage() {
     e.preventDefault()
     setLoading(true)
     try {
-      const response: any = await apiClient.post('/auth/login', { email, password })
+      const response = await apiClient.post<{ accessToken: string; user: unknown }>('/auth/login', { email, password })
       // Assuming the API returns { user, accessToken } and sets refresh token in cookie
       // We'll update the auth context via the login function from useAuth hook
       await login(response.accessToken, response.user)
       router.push('/dashboard')
-    } catch (error: any) {
+    } catch (error) {
       console.error('Login error:', error)
       // Handle error (show toast, etc.)
     } finally {
@@ -73,8 +73,8 @@ export default function LoginPage() {
           </div>
         </form>
         <p className="mt-4 text-center text-sm">
-          Don't have an account?{' '}
-          <a href="/auth/signup" className="font-medium text-primary hover:underline">
+          Don&apos;t have an account?{' '}
+          <a href="/signup" className="font-medium text-primary hover:underline">
             Sign up
           </a>
         </p>

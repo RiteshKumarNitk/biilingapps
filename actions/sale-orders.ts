@@ -321,7 +321,7 @@ export async function convertOrdersToInvoice(orderIds: string[]) {
         }
 
         try {
-            await createInvoice(invoiceData as any)
+            await createInvoice(invoiceData)
 
             await prisma.saleOrder.update({
                 where: { id: order.id },

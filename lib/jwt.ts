@@ -4,12 +4,15 @@ export interface JWTPayload {
   userId: string
   tenantId: string
   role: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
-// These secrets should be in your environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_here'
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET || 'your_jwt_refresh_secret_here'
+const JWT_SECRET = process.env.JWT_SECRET
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET
+
+if (!JWT_SECRET || !JWT_REFRESH_SECRET) {
+  throw new Error('JWT_SECRET and JWT_REFRESH_SECRET environment variables must be set')
+}
 
 const secretKey = new TextEncoder().encode(JWT_SECRET)
 const refreshSecretKey = new TextEncoder().encode(JWT_REFRESH_SECRET)
@@ -43,7 +46,7 @@ export async function verifyAccessToken(token: string): Promise<JWTPayload | nul
   try {
     const { payload } = await jwtVerify(token, secretKey)
     return payload as JWTPayload
-  } catch (error) {
+  } catch {
     return null
   }
 }
@@ -55,7 +58,7 @@ export async function verifyRefreshToken(token: string): Promise<{ userId: strin
   try {
     const { payload } = await jwtVerify(token, refreshSecretKey)
     return payload as { userId: string }
-  } catch (error) {
+  } catch {
     return null
   }
 }

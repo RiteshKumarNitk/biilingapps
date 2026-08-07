@@ -1,6 +1,29 @@
-import { Party, Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import prisma from '../prisma'
+import { partySchema, PartyFormValues } from '../schemas/party'
+
+function mapPartyToPrisma(data: PartyFormValues) {
+  return {
+    name: data.name,
+    gstin: data.gstin,
+    gstType: data.gst_type,
+    phone: data.phone,
+    email: data.email || undefined,
+    address: data.billing_address,
+    shippingAddress: data.is_shipping_same ? data.billing_address : data.shipping_address,
+    state: data.state,
+    city: data.city,
+    pincode: data.pincode,
+    panNumber: data.pan_number,
+    bankDetails: data.bank_details,
+    terms: data.terms,
+    description: data.description,
+    creditLimit: data.is_custom_credit_limit ? data.credit_limit : undefined,
+    asOfDate: data.as_of_date,
+    openingBalance: data.opening_balance || 0,
+    type: (data.balance_type === 'to_pay' ? 'SUPPLIER' : 'CUSTOMER') as 'SUPPLIER' | 'CUSTOMER',
+  }
+}
 
 export class PartyService {
   /**
@@ -55,40 +78,20 @@ export class PartyService {
   /**
    * Create a new party
    */
-  static async createParty(data: any, tenantId: string) {
-    // Clean up UI-specific fields not in DB
-    const { is_shipping_same, is_custom_credit_limit, balance_type, ...dbData } = data
+  static async createParty(data: unknown, tenantId: string) {
+    const parsed = partySchema.parse(data)
+    const mapped = mapPartyToPrisma(parsed)
 
-    // Ensure numeric fields are proper numbers or 0
-    if (dbData.credit_limit === undefined || dbData.credit_limit === null || isNaN(dbData.credit_limit)) {
-      dbData.credit_limit = 0
-    }
-    if (dbData.opening_balance === undefined || dbData.opening_balance === null || isNaN(dbData.opening_balance)) {
-      dbData.opening_balance = 0
-    }
-
-    // Derive type (customer/supplier) from balance_type if not present
-    // 'to_receive' -> We derive as Customer
-    // 'to_pay' -> We derive as Supplier
-    if (!dbData.type) {
-      dbData.type = balance_type === 'to_pay' ? 'SUPPLIER' : 'CUSTOMER'
-    }
-
-    // Initialize current_balance
-    if (dbData.current_balance === undefined) {
-      // If Supplier ('to_pay'), make opening balance negative (Credit)
-      // If Customer ('to_receive'), make opening balance positive (Debit)
-      let bal = Math.abs(dbData.opening_balance)
-      if (dbData.type === 'SUPPLIER' || balance_type === 'to_pay') {
-        bal = -bal
-      }
-      dbData.current_balance = bal
-    }
+    // Opening balance sign: Supplier ('to_pay') is a Credit balance (-ve),
+    // Customer ('to_receive') is a Debit balance (+ve)
+    const absOpening = Math.abs(mapped.openingBalance)
+    const currentBalance = mapped.type === 'SUPPLIER' ? -absOpening : absOpening
 
     // Create party
     const party = await prisma.party.create({
       data: {
-        ...dbData,
+        ...mapped,
+        currentBalance,
         tenantId
       }
     })
@@ -162,10 +165,13 @@ export class PartyService {
       balance -= purchase.grandTotal || 0
     }
 
-    // Process payments
-    // Note: Since we don't have a clear type field in payments, we'll need to infer
-    // For now, we'll skip payment processing in this calculation
-    // In a real implementation, we'd have a clear way to distinguish payment_in vs payment_out
+    // Process payments. The Payment model has no direction field, so we infer
+    // it from the party type: payments against a customer reduce what they owe
+    // us (Receivable -), payments against a supplier reduce what we owe them
+    // (Payable +).
+    for (const payment of payments) {
+      balance += party.type === 'SUPPLIER' ? (payment.amount || 0) : -(payment.amount || 0)
+    }
 
     // Process credit notes (sales return) -> Reduces Receivable (Dr -)
     for (const creditNote of creditNotes) {
@@ -331,7 +337,10 @@ export class PartyService {
   /**
    * Update party
    */
-  static async updateParty(id: string, tenantId: string, data: any) {
+  static async updateParty(id: string, tenantId: string, data: unknown) {
+    const parsed = partySchema.parse(data)
+    const mapped = mapPartyToPrisma(parsed)
+
     // 1. Fetch current party data to calculate balance diff
     const currentParty = await prisma.party.findUnique({
       where: { id, tenantId },
@@ -345,41 +354,18 @@ export class PartyService {
       throw new Error('Failed to fetch existing party data')
     }
 
-    // Clean up UI-specific fields not in DB
-    const { is_shipping_same, is_custom_credit_limit, balance_type, ...dbData } = data
-
-    // Ensure numeric fields
-    if (dbData.credit_limit !== undefined && (dbData.credit_limit === null || isNaN(dbData.credit_limit))) {
-      dbData.credit_limit = 0
-    }
-
-    // Handle Opening Balance
-    if (dbData.opening_balance !== undefined) {
-      // Recalculate current_balance logic:
-      // New Current Balance = Old Current Balance - Old Opening Balance + New Opening Balance
-      // This assumes current_balance = opening_balance + transactions
-      const oldOpening = currentParty.openingBalance || 0
-      const oldCurrent = currentParty.currentBalance || 0
-      const newOpening = dbData.opening_balance || 0
-
-      const diff = newOpening - oldOpening
-      dbData.current_balance = oldCurrent + diff
-    }
-
-    // Update type if balance_type is provided (though usually type shouldn't change, but if user wants to swap...)
-    if (balance_type) {
-      dbData.type = balance_type === 'to_pay' ? 'SUPPLIER' : 'CUSTOMER'
-    }
-
-    // Explicitly exclude fields that shouldn't change
-    delete dbData.id
-    delete dbData.createdAt
-    delete dbData.tenantId
+    // Recalculate current_balance so it stays consistent with any change to
+    // opening balance: New Current = Old Current - Old Opening + New Opening.
+    // This preserves transaction-driven movement since creation.
+    const oldOpening = currentParty.openingBalance || 0
+    const oldCurrent = currentParty.currentBalance || 0
+    const newOpening = mapped.openingBalance
+    const currentBalance = oldCurrent + (newOpening - oldOpening)
 
     // Update party
     const party = await prisma.party.update({
       where: { id, tenantId },
-      data: dbData
+      data: { ...mapped, currentBalance }
     })
 
     // Revalidate paths
@@ -403,7 +389,7 @@ export class PartyService {
   /**
    * Import parties bulk
    */
-  static async importPartiesBulk(parties: any[], tenantId: string) {
+  static async importPartiesBulk(parties: Record<string, unknown>[], tenantId: string) {
     // 1. Fetch existing parties for name matching
     const existingParties = await prisma.party.findMany({
       where: { tenantId },
@@ -412,50 +398,46 @@ export class PartyService {
 
     // Create normalized map (lowercase trimmed name -> id)
     const nameToIdMap = new Map<string, string>()
-    existingParties?.forEach(p => {
+    existingParties.forEach(p => {
       if (p.name) nameToIdMap.set(p.name.trim().toLowerCase(), p.id)
     })
 
-    const partiesToInsert = parties.map(p => {
-      let current_balance = p.current_balance
-      if (current_balance === undefined) {
-        let bal = Math.abs(p.opening_balance || 0)
-        if (p.type === 'supplier') {
-          bal = -bal
-        }
-        current_balance = bal
-      }
+    let count = 0
+    for (const p of parties) {
+      const name = String(p.name ?? '').trim()
+      if (!name) continue
+
+      const type: 'CUSTOMER' | 'SUPPLIER' = p.type === 'supplier' ? 'SUPPLIER' : 'CUSTOMER'
+      const openingBalance = Number(p.opening_balance) || 0
+      const absBalance = Math.abs(openingBalance)
+      const currentBalance = type === 'SUPPLIER' ? -absBalance : absBalance
 
       const dbRow = {
-        ...p,
         tenantId,
-        credit_limit: p.credit_limit || 0,
-        opening_balance: p.opening_balance || 0,
-        current_balance: current_balance
+        name,
+        type,
+        phone: (p.phone as string) || undefined,
+        email: (p.email as string) || undefined,
+        gstin: (p.gstin as string) || undefined,
+        gstType: (p.gst_type as string) || undefined,
+        address: (p.billing_address as string) || (p.address as string) || undefined,
+        shippingAddress: (p.shipping_address as string) || undefined,
+        openingBalance,
+        currentBalance,
       }
 
-      // Smart Match Logic
-      // If ID is missing/empty, try to find by Name
-      if (!dbRow.id) {
-        const normalizedName = dbRow.name?.trim().toLowerCase()
-        const existingId = nameToIdMap.get(normalizedName)
-        if (existingId) {
-          dbRow.id = existingId // Match found: Update
-        } else {
-          delete dbRow.id // No match: Insert (Auto UUID)
-        }
+      const existingId = nameToIdMap.get(name.toLowerCase())
+
+      if (existingId) {
+        await prisma.party.update({ where: { id: existingId, tenantId }, data: dbRow })
+      } else {
+        await prisma.party.create({ data: dbRow })
       }
-
-      return dbRow
-    })
-
-    const insertedData = await prisma.party.createMany({
-      data: partiesToInsert,
-      skipDuplicates: true
-    })
+      count++
+    }
 
     revalidatePath('/dashboard/parties')
-    return { success: true, count: insertedData.count || parties.length }
+    return { success: true, count }
   }
 }
 

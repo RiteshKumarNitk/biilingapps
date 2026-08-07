@@ -13,7 +13,7 @@ const expenseSchema = z.object({
     paymentMode: z.string()
 })
 
-export async function createExpense(data: any) {
+export async function createExpense(data: unknown) {
     const user = await requireAuth()
     const validated = expenseSchema.parse(data)
 

@@ -2,6 +2,7 @@
 
 import { requireAuth } from '@/lib/auth-server'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 
@@ -18,7 +19,7 @@ const orderSchema = z.object({
     totalAmount: z.number(),
 })
 
-export async function submitOrder(data: any) {
+export async function submitOrder(data: unknown) {
     const validated = orderSchema.parse(data)
 
     const tenant = await prisma.tenant.findFirst()
@@ -56,7 +57,7 @@ export async function updateOrderStatus(id: string, status: string) {
 
     await prisma.onlineOrder.update({
         where: { id, tenantId: user.tenantId },
-        data: { status: status.toUpperCase() as any }
+        data: { status: status.toUpperCase() as Prisma.OnlineOrderUncheckedUpdateInput['status'] }
     })
 
     revalidatePath('/dashboard/orders')

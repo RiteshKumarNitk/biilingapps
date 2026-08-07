@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { v2 as cloudinary } from 'cloudinary'
+import { requireAuth } from '@/lib/auth-server'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -9,6 +10,7 @@ cloudinary.config({
 
 export async function POST(req: Request) {
   try {
+    await requireAuth()
     const formData = await req.formData()
     const file = formData.get('file') as File
 

@@ -1,35 +1,44 @@
 'use server'
 
 import DashboardService from '@/lib/services/dashboard.service'
+import { requireAuth } from '@/lib/auth-server'
 
 export async function getDashboardStats(month?: number, year?: number) {
-  return DashboardService.getDashboardStats(month, year)
+  const user = await requireAuth()
+  return DashboardService.getDashboardStats(user.tenantId, month, year)
 }
 
 export async function getInventoryStats() {
-  return DashboardService.getInventoryStats()
+  const user = await requireAuth()
+  return DashboardService.getInventoryStats(user.tenantId)
 }
 
 export async function getFinancialStats(month?: number, year?: number) {
-  return DashboardService.getFinancialStats(month, year)
+  const user = await requireAuth()
+  return DashboardService.getFinancialStats(user.tenantId, month, year)
 }
 
 export async function getCustomerStats() {
-  return DashboardService.getCustomerStats()
+  const user = await requireAuth()
+  return DashboardService.getCustomerStats(user.tenantId)
 }
 
 export async function getOperationsStats() {
-  return DashboardService.getOperationsStats()
+  const user = await requireAuth()
+  return DashboardService.getOperationsStats(user.tenantId)
 }
 
 export async function getRecentSales() {
-  return DashboardService.getRecentSales()
+  const user = await requireAuth()
+  return DashboardService.getRecentSales(user.tenantId)
 }
 
 export async function getOverviewChartData(year?: number) {
-  return DashboardService.getOverviewChartData(year)
+  const user = await requireAuth()
+  return DashboardService.getOverviewChartData(user.tenantId, year)
 }
 
 export async function getSalesByCategory() {
-  return DashboardService.getSalesByCategory()
+  const user = await requireAuth()
+  return DashboardService.getSalesByCategory(user.tenantId)
 }

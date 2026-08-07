@@ -1,28 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ProductService } from '@/lib/services/product.service'
+import { requireAuth } from '@/lib/auth-server'
 
 export async function GET(request: NextRequest) {
   try {
-    // Get query parameters
+    const user = await requireAuth()
+
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
     const search = searchParams.get('search') || undefined
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const sortBy = searchParams.get('sortBy') as any || 'createdAt'
+    const sortBy = (searchParams.get('sortBy') as any) || 'createdAt'
     const sortOrder = (searchParams.get('sortOrder') as any) || 'desc'
 
-    // Validate tenantId
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Get products
     const result = await ProductService.getAll({
-      tenantId,
+      tenantId: user.tenantId,
       search,
       page,
       limit,
@@ -34,29 +26,20 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Get products error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { error: 'Unauthorized' },
+      { status: 401 }
     )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { tenantId, ...productData } = body
+    const user = await requireAuth()
+    const productData = await request.json()
 
-    // Validate tenantId
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
-
-    // Create product
     const product = await ProductService.create({
       ...productData,
-      tenantId
+      tenantId: user.tenantId
     })
 
     return NextResponse.json(product, { status: 201 })
@@ -64,60 +47,57 @@ export async function POST(request: NextRequest) {
     console.error('Create product error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    const user = await requireAuth()
     const body = await request.json()
-    const { id, tenantId, ...updateData } = body
+    const { id, ...updateData } = body
 
-    // Validate required fields
-    if (!id || !tenantId) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Product ID and Tenant ID are required' },
+        { error: 'Product ID is required' },
         { status: 400 }
       )
     }
 
-    // Update product
-    const product = await ProductService.update(id, tenantId, updateData)
+    const product = await ProductService.update(id, user.tenantId, updateData)
 
     return NextResponse.json(product, { status: 200 })
   } catch (error: any) {
     console.error('Update product error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const tenantId = searchParams.get('tenantId')
 
-    // Validate required fields
-    if (!id || !tenantId) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Product ID and Tenant ID are required' },
+        { error: 'Product ID is required' },
         { status: 400 }
       )
     }
 
-    // Delete product
-    await ProductService.delete(id, tenantId)
+    await ProductService.delete(id, user.tenantId)
 
     return NextResponse.json({ success: true }, { status: 200 })
   } catch (error: any) {
     console.error('Delete product error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }

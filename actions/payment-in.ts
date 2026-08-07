@@ -2,8 +2,10 @@
 
 import { requireAuth } from '@/lib/auth-server'
 import prisma from '@/lib/prisma'
+import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import PartyService from '@/lib/services/party.service'
+import { paymentInSchema } from '@/lib/schemas/payment'
 
 export type PaymentIn = {
     id: string
@@ -74,20 +76,12 @@ export async function getPayments(filter: PaymentFilter) {
     }
 }
 
-export async function createPaymentIn(data: {
-    party_id: string
-    amount: number
-    date: Date
-    mode: string
-    payment_number?: string // Ref No
-    transaction_ref?: string
-    notes?: string
-    image_url?: string
-}) {
+export async function createPaymentIn(data: unknown) {
     const user = await requireAuth()
+    const parsed = paymentInSchema.parse(data)
 
     const party = await prisma.party.findUnique({
-        where: { id: data.party_id, tenantId: user.tenantId }
+        where: { id: parsed.party_id, tenantId: user.tenantId }
     })
 
     if (!party) {
@@ -97,23 +91,23 @@ export async function createPaymentIn(data: {
     await prisma.payment.create({
         data: {
             tenantId: user.tenantId,
-            partyId: data.party_id,
-            amount: data.amount,
-            mode: data.mode.toUpperCase() as any,
-            transactionRef: data.payment_number || data.transaction_ref,
-            createdAt: data.date,
-            notes: data.notes
+            partyId: parsed.party_id,
+            amount: parsed.amount,
+            mode: parsed.mode.toUpperCase() as Prisma.PaymentUncheckedCreateInput['mode'],
+            transactionRef: parsed.payment_number || parsed.transaction_ref,
+            createdAt: parsed.date,
+            notes: parsed.notes
         }
     })
 
     try {
-        await PartyService.recalculatePartyBalance(data.party_id, user.tenantId)
+        await PartyService.recalculatePartyBalance(parsed.party_id, user.tenantId)
     } catch (e) {
         console.error("Failed to sync party balance (payment):", e)
     }
 
     revalidatePath('/dashboard/invoices/payment-in')
-    revalidatePath(`/dashboard/parties/${data.party_id}`)
+    revalidatePath(`/dashboard/parties/${parsed.party_id}`)
     return { success: true }
 }
 

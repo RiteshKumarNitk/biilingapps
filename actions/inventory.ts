@@ -207,7 +207,22 @@ export async function getAdjustmentHistory() {
 
 export type BulkUpdateItem = {
     id: string
-    [key: string]: any
+    [key: string]: unknown
+}
+
+// Only these product fields may be bulk-edited; anything else sent by the
+// client (e.g. a stray `tenantId`) is dropped rather than passed to Prisma.
+const BULK_UPDATE_FIELD_MAP: Record<string, string> = {
+    name: 'name',
+    category: 'category',
+    hsn_code: 'hsnCode',
+    item_code: 'sku',
+    purchase_price: 'costPrice',
+    price: 'price',
+    tax_mode: 'taxMode',
+    discount_value: 'discountValue',
+    discount_type: 'discountType',
+    gst_rate: 'gstRate',
 }
 
 export async function bulkUpdateProducts(updates: BulkUpdateItem[]) {
@@ -215,9 +230,16 @@ export async function bulkUpdateProducts(updates: BulkUpdateItem[]) {
 
     const promises = updates.map(item => {
         const { id, ...rest } = item
+        const data: Record<string, unknown> = {}
+        for (const [clientKey, prismaKey] of Object.entries(BULK_UPDATE_FIELD_MAP)) {
+            if (clientKey in rest) {
+                data[prismaKey] = rest[clientKey]
+            }
+        }
+
         return prisma.product.updateMany({
-            where: { id, tenantId: user.tenantId },
-            data: rest as any
+            where: { id: id as string, tenantId: user.tenantId },
+            data
         })
     })
 

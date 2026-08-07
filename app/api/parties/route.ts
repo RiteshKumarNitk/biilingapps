@@ -4,22 +4,16 @@ import prisma from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
   try {
+    const user = await requireAuth()
+
     const { searchParams } = new URL(request.url)
-    const tenantId = searchParams.get('tenantId')
     const search = searchParams.get('search') || undefined
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
-    const type = searchParams.get('type') as any || undefined
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
+    const type = (searchParams.get('type') as any) || undefined
 
     const where: any = {
-      tenantId,
+      tenantId: user.tenantId,
       ...(search && {
         OR: [
           { name: { contains: search, mode: 'insensitive' } },
@@ -54,28 +48,21 @@ export async function GET(request: NextRequest) {
   } catch (error: any) {
     console.error('Get parties error:', error)
     return NextResponse.json(
-      { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { error: 'Unauthorized' },
+      { status: 401 }
     )
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const { tenantId, ...partyData } = body
-
-    if (!tenantId) {
-      return NextResponse.json(
-        { error: 'Tenant ID is required' },
-        { status: 400 }
-      )
-    }
+    const user = await requireAuth()
+    const partyData = await request.json()
 
     const party = await prisma.party.create({
       data: {
         ...partyData,
-        tenantId
+        tenantId: user.tenantId
       }
     })
 
@@ -84,25 +71,26 @@ export async function POST(request: NextRequest) {
     console.error('Create party error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }
 
 export async function PUT(request: NextRequest) {
   try {
+    const user = await requireAuth()
     const body = await request.json()
-    const { id, tenantId, ...updateData } = body
+    const { id, ...updateData } = body
 
-    if (!id || !tenantId) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Party ID and Tenant ID are required' },
+        { error: 'Party ID is required' },
         { status: 400 }
       )
     }
 
     const party = await prisma.party.update({
-      where: { id, tenantId },
+      where: { id, tenantId: user.tenantId },
       data: updateData
     })
 
@@ -111,26 +99,26 @@ export async function PUT(request: NextRequest) {
     console.error('Update party error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
+    const user = await requireAuth()
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    const tenantId = searchParams.get('tenantId')
 
-    if (!id || !tenantId) {
+    if (!id) {
       return NextResponse.json(
-        { error: 'Party ID and Tenant ID are required' },
+        { error: 'Party ID is required' },
         { status: 400 }
       )
     }
 
     await prisma.party.delete({
-      where: { id, tenantId }
+      where: { id, tenantId: user.tenantId }
     })
 
     return NextResponse.json({ success: true }, { status: 200 })
@@ -138,7 +126,7 @@ export async function DELETE(request: NextRequest) {
     console.error('Delete party error:', error)
     return NextResponse.json(
       { error: error.message || 'Internal server error' },
-      { status: 500 }
+      { status: 400 }
     )
   }
 }

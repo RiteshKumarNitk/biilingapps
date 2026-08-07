@@ -3,6 +3,7 @@
 import InvoiceService from '@/lib/services/invoice.service'
 import { requireAuth } from '@/lib/auth-server'
 import prisma from '@/lib/prisma'
+import { invoiceSchema } from '@/lib/schemas/invoice'
 
 export async function getInvoiceStats(filters?: { search?: string; startDate?: Date; endDate?: Date; status?: string }) {
   const user = await requireAuth()
@@ -25,9 +26,10 @@ export async function getInvoices(
   return await InvoiceService.getInvoices(user.tenantId, page, pageSize, filters)
 }
 
-export async function createInvoice(data: any) {
+export async function createInvoice(data: unknown) {
   const user = await requireAuth()
-  return await InvoiceService.createInvoice(data, user.tenantId)
+  const parsed = invoiceSchema.parse(data)
+  return await InvoiceService.createInvoice(parsed, user.tenantId)
 }
 
 export async function getInvoiceDetails(id: string) {

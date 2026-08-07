@@ -4,74 +4,70 @@ import { requireAuth } from '@/lib/auth-server'
 import prisma from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import PartyService from '@/lib/services/party.service'
+import { purchaseBillSchema } from '@/lib/schemas/purchase'
 
-export async function createPurchaseBill(data: any) {
+export async function createPurchaseBill(data: unknown) {
     const user = await requireAuth()
+    const parsed = purchaseBillSchema.parse(data)
 
-    const po = await prisma.purchaseOrder.create({
-        data: {
-            tenantId: user.tenantId,
-            poNumber: data.bill_number,
-            partyId: data.party_id,
-            date: new Date(data.date),
-            status: 'RECEIVED',
-            grandTotal: data.grand_total,
-            notes: data.notes
-        }
-    })
+    const po = await prisma.$transaction(async (tx) => {
+        const po = await tx.purchaseOrder.create({
+            data: {
+                tenantId: user.tenantId,
+                poNumber: parsed.bill_number,
+                partyId: parsed.party_id,
+                partyName: parsed.party_name,
+                date: parsed.date,
+                status: 'RECEIVED',
+                grandTotal: parsed.grand_total,
+                notes: parsed.notes
+            }
+        })
 
-    const items = data.items.map((item: any) => ({
-        tenantId: user.tenantId,
-        poId: po.id,
-        productId: item.product_id,
-        description: item.description,
-        quantity: item.quantity,
-        unit: item.unit,
-        unitPrice: item.unit_price,
-        gstRate: item.gst_rate || 0,
-        taxAmount: item.tax_amount || 0,
-        discount: item.discount || 0,
-        totalAmount: item.total_amount,
-        hsnCode: item.hsn_code
-    }))
+        await tx.poItem.createMany({
+            data: parsed.items.map((item) => ({
+                tenantId: user.tenantId,
+                poId: po.id,
+                productId: item.product_id,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit,
+                unitPrice: item.unit_price,
+                gstRate: item.gst_rate,
+                taxAmount: item.tax_amount,
+                discount: item.discount,
+                totalAmount: item.total_amount,
+                hsnCode: item.hsn_code
+            }))
+        })
 
-    await prisma.poItem.createMany({
-        data: items
-    })
+        for (const item of parsed.items) {
+            if (item.product_id) {
+                await tx.stockMovement.create({
+                    data: {
+                        tenantId: user.tenantId,
+                        productId: item.product_id,
+                        type: 'PURCHASE_RECEIVED',
+                        quantity: item.quantity,
+                        referenceId: po.id,
+                        notes: 'Purchase Bill ' + parsed.bill_number
+                    }
+                })
 
-    for (const item of items) {
-        if (item.productId) {
-            await prisma.stockMovement.create({
-                data: {
-                    tenantId: user.tenantId,
-                    productId: item.productId,
-                    type: 'PURCHASE_RECEIVED',
-                    quantity: item.quantity,
-                    referenceId: po.id,
-                    notes: 'Purchase Bill ' + data.bill_number
-                }
-            })
-
-            const currentProd = await prisma.product.findUnique({
-                where: { id: item.productId, tenantId: user.tenantId },
-                select: { stockQuantity: true }
-            })
-
-            if (currentProd) {
-                await prisma.product.update({
-                    where: { id: item.productId, tenantId: user.tenantId },
-                    data: { stockQuantity: (currentProd.stockQuantity || 0) + item.quantity }
+                await tx.product.updateMany({
+                    where: { id: item.product_id, tenantId: user.tenantId },
+                    data: { stockQuantity: { increment: item.quantity } }
                 })
             }
         }
-    }
 
-    if (data.party_id) {
-        try {
-            await PartyService.recalculatePartyBalance(data.party_id, user.tenantId)
-        } catch (e) {
-            console.error("Failed to sync party balance (purchase):", e)
-        }
+        return po
+    })
+
+    try {
+        await PartyService.recalculatePartyBalance(parsed.party_id, user.tenantId)
+    } catch (e) {
+        console.error("Failed to sync party balance (purchase):", e)
     }
 
     revalidatePath('/dashboard/purchase/bills')
@@ -145,21 +141,21 @@ export async function deletePurchaseBill(id: string) {
 
     if (!po) throw new Error('Purchase Bill not found')
 
-    if (po.poItems && po.poItems.length > 0) {
+    await prisma.$transaction(async (tx) => {
         for (const item of po.poItems) {
             if (item.productId) {
-                const prod = await prisma.product.findUnique({
+                const prod = await tx.product.findUnique({
                     where: { id: item.productId, tenantId: user.tenantId },
                     select: { stockQuantity: true }
                 })
 
                 if (prod) {
-                    await prisma.product.update({
+                    await tx.product.update({
                         where: { id: item.productId, tenantId: user.tenantId },
                         data: { stockQuantity: Math.max(0, (prod.stockQuantity || 0) - item.quantity) }
                     })
 
-                    await prisma.stockMovement.create({
+                    await tx.stockMovement.create({
                         data: {
                             tenantId: po.tenantId,
                             productId: item.productId,
@@ -172,10 +168,10 @@ export async function deletePurchaseBill(id: string) {
                 }
             }
         }
-    }
 
-    await prisma.purchaseOrder.delete({
-        where: { id, tenantId: user.tenantId }
+        await tx.purchaseOrder.delete({
+            where: { id, tenantId: user.tenantId }
+        })
     })
 
     if (po.partyId) {

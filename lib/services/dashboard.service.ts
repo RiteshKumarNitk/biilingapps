@@ -5,7 +5,7 @@ export class DashboardService {
   /**
    * Get dashboard statistics
    */
-  static async getDashboardStats(month?: number, year?: number) {
+  static async getDashboardStats(tenantId: string, month?: number, year?: number) {
     const now = new Date()
 
     // Determine date range
@@ -21,12 +21,10 @@ export class DashboardService {
       endDate = endOfMonth(now)
     }
 
-    const startIso = startDate.toISOString()
-    const endIso = endDate.toISOString()
-
     // 1. Total Revenue (Sum of grand_total from Invoices in Range)
     const revenueData = await prisma.invoice.findMany({
       where: {
+        tenantId,
         AND: [
           { createdAt: { gte: startDate } },
           { createdAt: { lte: endDate } }
@@ -47,6 +45,7 @@ export class DashboardService {
 
     const prevRevenueData = await prisma.invoice.findMany({
       where: {
+        tenantId,
         AND: [
           { createdAt: { gte: prevStart } },
           { createdAt: { lte: prevEnd } }
@@ -70,6 +69,7 @@ export class DashboardService {
     // 2. Sales Count (Filtered)
     const salesCount = await prisma.invoice.count({
       where: {
+        tenantId,
         AND: [
           { createdAt: { gte: startDate } },
           { createdAt: { lte: endDate } }
@@ -77,14 +77,15 @@ export class DashboardService {
       }
     })
 
-    // 3. Parties Count (Global)
-    const partiesCount = await prisma.party.count()
+    // 3. Parties Count
+    const partiesCount = await prisma.party.count({ where: { tenantId } })
 
-    // 4. Products Count (Global)
-    const productsCount = await prisma.product.count()
+    // 4. Products Count
+    const productsCount = await prisma.product.count({ where: { tenantId } })
 
-    // 5. Receivable & Payable (Global state)
+    // 5. Receivable & Payable
     const partiesData = await prisma.party.findMany({
+      where: { tenantId },
       select: {
         currentBalance: true
       }
@@ -124,9 +125,10 @@ export class DashboardService {
   /**
    * Get inventory statistics
    */
-  static async getInventoryStats() {
+  static async getInventoryStats(tenantId: string) {
     // Fetch products to check stock
     const products = await prisma.product.findMany({
+      where: { tenantId },
       select: {
         id: true,
         name: true,
@@ -143,6 +145,7 @@ export class DashboardService {
 
     // Top Selling (Approximate by invoice frequency)
     const invoiceItems = await prisma.invoiceItem.findMany({
+      where: { tenantId },
       select: {
         productId: true,
         product: {
@@ -178,7 +181,7 @@ export class DashboardService {
   /**
    * Get financial statistics
    */
-  static async getFinancialStats(month?: number, year?: number) {
+  static async getFinancialStats(tenantId: string, month?: number, year?: number) {
     // Basic Cash Flow mock or simple aggregation
     // For now, returning mock/empty as 'expenses' or 'cash_adjustments' tables might be empty or missing
     return {
@@ -190,9 +193,10 @@ export class DashboardService {
   /**
    * Get customer statistics
    */
-  static async getCustomerStats() {
+  static async getCustomerStats(tenantId: string) {
     // Top Customer by Revenue
     const invoices = await prisma.invoice.findMany({
+      where: { tenantId },
       select: {
         partyName: true,
         grandTotal: true,
@@ -223,10 +227,11 @@ export class DashboardService {
   /**
    * Get operations statistics
    */
-  static async getOperationsStats() {
+  static async getOperationsStats(tenantId: string) {
     // Pending Quotations
     const pendingQuotes = await prisma.quotation.count({
       where: {
+        tenantId,
         status: 'DRAFT'
       }
     })
@@ -234,6 +239,7 @@ export class DashboardService {
     // Pending Orders (if POs exist)
     const pendingPO = await prisma.purchaseOrder.count({
       where: {
+        tenantId,
         status: 'PENDING'
       }
     })
@@ -247,9 +253,10 @@ export class DashboardService {
   /**
    * Get recent sales
    */
-  static async getRecentSales() {
+  static async getRecentSales(tenantId: string) {
     // Fetch last 5 invoices with party details
     const data = await prisma.invoice.findMany({
+      where: { tenantId },
       select: {
         id: true,
         invoiceNumber: true,
@@ -275,7 +282,7 @@ export class DashboardService {
   /**
    * Get overview chart data
    */
-  static async getOverviewChartData(year?: number) {
+  static async getOverviewChartData(tenantId: string, year?: number) {
     // Filter by Year (default current)
     const targetYear = year || new Date().getFullYear()
     const startDate = startOfYear(setYear(new Date(), targetYear))
@@ -283,6 +290,7 @@ export class DashboardService {
 
     const data = await prisma.invoice.findMany({
       where: {
+        tenantId,
         AND: [
           { createdAt: { gte: startDate } },
           { createdAt: { lte: endDate } }
@@ -322,10 +330,11 @@ export class DashboardService {
   /**
    * Get sales by category
    */
-  static async getSalesByCategory() {
+  static async getSalesByCategory(tenantId: string) {
     // We need to fetch invoice items and their products' categories
     // Assuming we have a category field in Product model
     const items = await prisma.invoiceItem.findMany({
+      where: { tenantId },
       select: {
         totalAmount: true,
         product: {

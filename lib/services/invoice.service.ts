@@ -1,6 +1,7 @@
-import { Invoice, InvoiceItem, Prisma } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { revalidatePath } from 'next/cache'
 import prisma from '../prisma'
+import { InvoiceFormValues } from '../schemas/invoice'
 
 export class InvoiceService {
   /**
@@ -77,14 +78,22 @@ export class InvoiceService {
   /**
    * Create a new invoice
    */
-  static async createInvoice(data: any, tenantId: string) {
+  static async createInvoice(data: InvoiceFormValues, tenantId: string) {
     // Start transaction
     return await prisma.$transaction(async (tx) => {
-      // Calculate totals
-      const items = data.items || []
-      const subtotal = items.reduce((acc: any, item: any) => acc + (item.quantity * item.unit_price), 0)
-      const grandTotal = items.reduce((acc: any, item: any) => acc + item.total_amount, 0)
-      const receivedAmount = data.received_amount || 0
+      // Recompute item totals server-side rather than trusting client-submitted amounts
+      const items = data.items.map((item) => {
+        const taxable = item.quantity * item.unit_price - (item.discount || 0)
+        const taxAmount = taxable * (item.gst_rate / 100)
+        return {
+          ...item,
+          tax_amount: taxAmount,
+          total_amount: taxable + taxAmount
+        }
+      })
+      const subtotal = items.reduce((acc, item) => acc + (item.quantity * item.unit_price - (item.discount || 0)), 0)
+      const grandTotal = items.reduce((acc, item) => acc + item.total_amount, 0)
+      const receivedAmount = Math.min(data.received_amount || 0, grandTotal)
 
       // 1. Create Invoice
       const invoice = await tx.invoice.create({
@@ -95,8 +104,8 @@ export class InvoiceService {
           partyName: data.party_name,
           date: data.date,
           dueDate: data.due_date,
-          status: data.status,
-          paymentStatus: data.payment_status,
+          status: data.status.toUpperCase() as Prisma.InvoiceUncheckedCreateInput['status'],
+          paymentStatus: data.payment_status.toUpperCase() as Prisma.InvoiceUncheckedCreateInput['paymentStatus'],
           partyAddress: data.party_address,
           shippingAddress: data.shipping_address,
           partyPhone: data.party_phone,
@@ -185,11 +194,10 @@ export class InvoiceService {
         })
 
         if (party) {
-          // Calculate new balance
-          // For simplicity, we're just updating based on this transaction
-          // In a real system, you'd calculate from all transactions
-          const newBalance = party.currentBalance + (data.party_type === 'supplier' ? receivedAmount : -receivedAmount)
-          
+          // Invoicing increases what the customer owes by the full invoice
+          // total; any amount received against it is netted off immediately.
+          const newBalance = party.currentBalance + (grandTotal - receivedAmount)
+
           await tx.party.update({
             where: { id: data.party_id, tenantId },
             data: {
@@ -352,10 +360,9 @@ export class InvoiceService {
           })
 
           if (party) {
-            const adjustment = invoice.partyId === party.id ? 
-              (invoice.grandTotal - invoice.paidAmount) * -1 : 
-              invoice.grandTotal - invoice.paidAmount
-            
+            // Undo the (grandTotal - paidAmount) net balance change applied at creation
+            const adjustment = -(invoice.grandTotal - invoice.paidAmount)
+
             await tx.party.update({
               where: { id: invoice.partyId, tenantId },
               data: {

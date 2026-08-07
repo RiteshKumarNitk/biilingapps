@@ -54,6 +54,10 @@ model UsersProfile {
   email     String   @unique
   password  String
   fullName  String?
+  firstName String?
+  lastName  String?
+  phone     String?
+  avatarUrl String?
   role      Role     @default(owner)
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -138,9 +142,20 @@ model Party {
   type             PartyType
   name             String
   gstin            String?
+  gstType          String?
   phone            String?
   email            String?
   address          String?
+  shippingAddress  String?
+  state            String?
+  city             String?
+  pincode          String?
+  panNumber        String?
+  bankDetails      String?
+  terms            String?
+  description      String?
+  creditLimit      Float?
+  asOfDate         DateTime?
   openingBalance   Float             @default(0)
   currentBalance   Float             @default(0)
   tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -497,8 +512,13 @@ model PoItem {
   productId   String?
   description String
   quantity    Float
+  unit        String?
   unitPrice   Float
+  gstRate     Float   @default(0)
+  taxAmount   Float   @default(0)
+  discount    Float   @default(0)
   totalAmount Float
+  hsnCode     String?
 
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
