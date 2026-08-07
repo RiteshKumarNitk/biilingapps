@@ -1,8 +1,8 @@
 
 import { getGSTReport } from '@/actions/reports'
 import { GSTReportClient } from './client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
+import { StatsCard } from '@/components/shared'
 
 export default async function GSTReportPage({
     searchParams,
@@ -28,22 +28,8 @@ export default async function GSTReportPage({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total GST Collected (Output Tax)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{totalTax.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Sales Value</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{totalSales.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
+                <StatsCard label="Total GST Collected (Output Tax)" value={`₹${totalTax.toFixed(2)}`} />
+                <StatsCard label="Total Sales Value" value={`₹${totalSales.toFixed(2)}`} />
             </div>
 
             <div className="border rounded-md p-4 bg-white">

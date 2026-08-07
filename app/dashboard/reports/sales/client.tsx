@@ -3,6 +3,7 @@
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
+import { StatusBadge, AmountDisplay } from "@/components/shared"
 
 export type SalesReportItem = {
     id: string
@@ -30,15 +31,12 @@ export const columns: ColumnDef<SalesReportItem>[] = [
     {
         accessorKey: "paymentStatus",
         header: "Status",
-        cell: ({ row }) => <span className="capitalize">{(row.getValue("paymentStatus") as string)?.toLowerCase()}</span>,
+        cell: ({ row }) => <StatusBadge status={row.getValue("paymentStatus")} />,
     },
     {
         accessorKey: "grandTotal",
         header: () => <div className="text-right">Amount</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grandTotal"))
-            return <div className="text-right font-medium">₹ {amount.toFixed(2)}</div>
-        },
+        cell: ({ row }) => <div className="text-right font-medium"><AmountDisplay amount={parseFloat(row.getValue("grandTotal"))} /></div>,
     },
 ]
 

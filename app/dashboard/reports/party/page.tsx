@@ -1,7 +1,7 @@
 
 import { getPartyReport } from '@/actions/reports'
 import { PartyReportClient } from './client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatsCard } from '@/components/shared'
 
 export default async function PartyReportPage() {
     const data = await getPartyReport() || []
@@ -16,22 +16,8 @@ export default async function PartyReportPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Receivable</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">₹{totalReceivable.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Payable</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">₹{totalPayable.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
+                <StatsCard label="Total Receivable" value={`₹${totalReceivable.toFixed(2)}`} valueClassName="text-green-600" />
+                <StatsCard label="Total Payable" value={`₹${totalPayable.toFixed(2)}`} valueClassName="text-red-600" />
             </div>
 
             <div className="border rounded-md p-4 bg-white">

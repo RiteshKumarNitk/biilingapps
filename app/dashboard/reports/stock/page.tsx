@@ -1,7 +1,7 @@
 
 import { getStockReport } from '@/actions/reports'
 import { StockReportClient } from './client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { StatsCard } from '@/components/shared'
 
 export default async function StockReportPage() {
     const data = await getStockReport() || []
@@ -16,22 +16,8 @@ export default async function StockReportPage() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Inventory Value (Selling Price)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{totalStockValue.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Low Stock Items</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-red-600">{lowStockItems}</div>
-                    </CardContent>
-                </Card>
+                <StatsCard label="Total Inventory Value (Selling Price)" value={`₹${totalStockValue.toFixed(2)}`} />
+                <StatsCard label="Low Stock Items" value={lowStockItems} valueClassName="text-red-600" />
             </div>
 
             <div className="border rounded-md p-4 bg-white">

@@ -2,6 +2,7 @@
 
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
+import { AmountDisplay } from "@/components/shared"
 
 export type StockReportItem = {
     id: string
@@ -24,10 +25,7 @@ export const columns: ColumnDef<StockReportItem>[] = [
     {
         accessorKey: "price",
         header: () => <div className="text-right">Selling Price</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("price"))
-            return <div className="text-right">₹ {amount.toFixed(2)}</div>
-        },
+        cell: ({ row }) => <div className="text-right"><AmountDisplay amount={parseFloat(row.getValue("price"))} /></div>,
     },
     {
         id: "stock_value",
@@ -35,7 +33,7 @@ export const columns: ColumnDef<StockReportItem>[] = [
         cell: ({ row }) => {
             const qty = parseFloat(row.getValue("stockQuantity") as any)
             const price = parseFloat(row.getValue("price") as any)
-            return <div className="text-right font-bold">₹ {(qty * price).toFixed(2)}</div>
+            return <div className="text-right font-bold"><AmountDisplay amount={qty * price} /></div>
         },
     },
 ]

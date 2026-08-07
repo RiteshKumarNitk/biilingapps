@@ -28,6 +28,8 @@ export interface StatsCardProps {
     footer?: React.ReactNode
     /** 'gradient' matches the richer card style used on list-page toolbars; 'plain' matches report pages. */
     variant?: 'plain' | 'gradient'
+    /** Override the value's default text color, e.g. "text-green-600". */
+    valueClassName?: string
     className?: string
 }
 
@@ -45,6 +47,7 @@ export function StatsCard({
     trendLabel,
     footer,
     variant = 'plain',
+    valueClassName,
     className,
 }: StatsCardProps) {
     const colors = COLOR_CLASSES[color]
@@ -66,7 +69,7 @@ export function StatsCard({
                         )}
                         <div>
                             <p className="text-sm font-medium text-slate-500">{label}</p>
-                            <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{value}</h3>
+                            <h3 className={cn("text-2xl font-bold text-slate-900 mt-0.5", valueClassName)}>{value}</h3>
                             {footer}
                         </div>
                     </div>
@@ -86,7 +89,7 @@ export function StatsCard({
                 <CardTitle className="text-sm font-medium text-slate-500">{label}</CardTitle>
             </CardHeader>
             <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{value}</div>
+                <div className={cn("text-2xl font-bold text-slate-900", valueClassName)}>{value}</div>
                 {(trend !== undefined || footer) && (
                     <div className="flex items-center text-xs text-muted-foreground mt-1 gap-2">
                         {trend !== undefined && (

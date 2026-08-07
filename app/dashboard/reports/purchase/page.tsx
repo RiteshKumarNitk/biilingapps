@@ -1,8 +1,8 @@
 
 import { getPurchaseReport } from '@/actions/reports'
 import { PurchaseReportClient } from './client'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
+import { StatsCard } from '@/components/shared'
 
 export default async function PurchaseReportPage({
     searchParams,
@@ -27,14 +27,7 @@ export default async function PurchaseReportPage({
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">₹{totalPurchases.toFixed(2)}</div>
-                    </CardContent>
-                </Card>
+                <StatsCard label="Total Purchases" value={`₹${totalPurchases.toFixed(2)}`} />
             </div>
 
             <div className="border rounded-md p-4 bg-white">
