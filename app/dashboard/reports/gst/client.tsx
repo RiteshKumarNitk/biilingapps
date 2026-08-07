@@ -6,39 +6,38 @@ import { format } from "date-fns"
 
 export type GSTReportItem = {
     id: string
-    invoice_id: string
     description: string
     quantity: number
-    unit_price: number
-    gst_rate: number
-    tax_amount: number
-    total_amount: number
-    invoices: {
+    unitPrice: number
+    gstRate: number
+    taxAmount: number
+    totalAmount: number
+    invoice: {
         date: string
-        invoice_number: string
-        party_name: string
-        grand_total: number
+        invoiceNumber: string
+        partyName: string
+        grandTotal: number
     }
 }
 
 export const columns: ColumnDef<GSTReportItem>[] = [
     {
-        accessorKey: "invoices.date",
+        accessorKey: "invoice.date",
         header: "Date",
-        cell: ({ row }) => format(new Date(row.original.invoices.date), "dd/MM/yyyy"),
+        cell: ({ row }) => format(new Date(row.original.invoice.date), "dd/MM/yyyy"),
     },
     {
-        accessorKey: "invoices.invoice_number",
+        accessorKey: "invoice.invoiceNumber",
         header: "Invoice #",
     },
     {
-        accessorKey: "invoices.party_name",
+        accessorKey: "invoice.partyName",
         header: "Customer",
     },
     {
-        accessorKey: "gst_rate",
+        accessorKey: "gstRate",
         header: () => <div className="text-right">GST %</div>,
-        cell: ({ row }) => <div className="text-right">{row.getValue("gst_rate")}%</div>,
+        cell: ({ row }) => <div className="text-right">{row.getValue("gstRate")}%</div>,
     },
     {
         id: "taxable_value",
@@ -47,25 +46,25 @@ export const columns: ColumnDef<GSTReportItem>[] = [
             // Back calculate taxable if needed, but usually (Qty * Price) - Discount
             // However, createInvoice logic: unit_price IS taxable price (if taxType was exclusive logic stored)
             // Ideally we calculate: (Total - Tax)
-            const total = row.original.total_amount
-            const tax = row.original.tax_amount || 0
+            const total = row.original.totalAmount
+            const tax = row.original.taxAmount || 0
             const taxable = total - tax
             return <div className="text-right">₹ {taxable.toFixed(2)}</div>
         },
     },
     {
-        accessorKey: "tax_amount",
+        accessorKey: "taxAmount",
         header: () => <div className="text-right">Tax Amt</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("tax_amount"))
+            const amount = parseFloat(row.getValue("taxAmount"))
             return <div className="text-right font-medium">₹ {amount.toFixed(2)}</div>
         },
     },
     {
-        accessorKey: "total_amount",
+        accessorKey: "totalAmount",
         header: () => <div className="text-right">Total</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("total_amount"))
+            const amount = parseFloat(row.getValue("totalAmount"))
             return <div className="text-right font-medium">₹ {amount.toFixed(2)}</div>
         },
     },
@@ -73,6 +72,6 @@ export const columns: ColumnDef<GSTReportItem>[] = [
 
 export function GSTReportClient({ data }: { data: any[] }) {
     return (
-        <DataTable columns={columns} data={data} searchKey="invoices.party_name" />
+        <DataTable columns={columns} data={data} searchKey="invoice.partyName" />
     )
 }

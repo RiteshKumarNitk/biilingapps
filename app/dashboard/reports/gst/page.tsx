@@ -15,8 +15,8 @@ export default async function GSTReportPage({
 
     const { sales } = await getGSTReport(startDateParam, endDateParam) || { sales: [] }
 
-    const totalTax = sales.reduce((acc: number, curr: any) => acc + (curr.tax_amount || 0), 0)
-    const totalSales = sales.reduce((acc: number, curr: any) => acc + (curr.total_amount || 0), 0)
+    const totalTax = sales.reduce((acc, curr) => acc + (curr.taxAmount || 0), 0)
+    const totalSales = sales.reduce((acc, curr) => acc + (curr.totalAmount || 0), 0)
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

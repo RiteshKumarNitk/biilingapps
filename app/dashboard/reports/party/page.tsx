@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export default async function PartyReportPage() {
     const data = await getPartyReport() || []
 
-    const totalReceivable = data.reduce((acc: number, curr: any) => curr.current_balance > 0 ? acc + curr.current_balance : acc, 0)
-    const totalPayable = data.reduce((acc: number, curr: any) => curr.current_balance < 0 ? acc + Math.abs(curr.current_balance) : acc, 0)
+    const totalReceivable = data.reduce((acc: number, curr) => curr.currentBalance > 0 ? acc + curr.currentBalance : acc, 0)
+    const totalPayable = data.reduce((acc: number, curr) => curr.currentBalance < 0 ? acc + Math.abs(curr.currentBalance) : acc, 0)
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

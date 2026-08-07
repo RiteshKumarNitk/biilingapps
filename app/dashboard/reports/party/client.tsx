@@ -7,7 +7,7 @@ export type PartyReportItem = {
     id: string
     name: string
     type: string
-    current_balance: number // +ve Receivable, -ve Payable usually
+    currentBalance: number // +ve Receivable, -ve Payable usually
 }
 
 export const columns: ColumnDef<PartyReportItem>[] = [
@@ -18,13 +18,13 @@ export const columns: ColumnDef<PartyReportItem>[] = [
     {
         accessorKey: "type",
         header: "Type",
-        cell: ({ row }) => <span className="capitalize">{row.getValue("type")}</span>,
+        cell: ({ row }) => <span className="capitalize">{(row.getValue("type") as string)?.toLowerCase()}</span>,
     },
     {
-        accessorKey: "current_balance",
+        accessorKey: "currentBalance",
         header: () => <div className="text-right">Balance</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("current_balance") || "0")
+            const amount = parseFloat(row.getValue("currentBalance") || "0")
             const isReceivable = amount > 0
             return (
                 <div className={`text-right font-medium ${amount > 0 ? 'text-green-600' : (amount < 0 ? 'text-red-600' : 'text-slate-500')}`}>

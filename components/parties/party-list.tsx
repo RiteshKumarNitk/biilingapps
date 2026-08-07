@@ -1,6 +1,7 @@
 
 "use client"
 
+import * as React from "react"
 import { cn } from "@/lib/utils"
 import { Search, Filter, ArrowUpRight } from "lucide-react"
 import { Input } from "@/components/ui/input"
@@ -13,6 +14,17 @@ interface PartyListProps {
 }
 
 export function PartyList({ parties, selectedId, onSelect }: PartyListProps) {
+    const [search, setSearch] = React.useState("")
+
+    const filteredParties = React.useMemo(() => {
+        const query = search.trim().toLowerCase()
+        if (!query) return parties
+        return parties.filter((party) =>
+            party.name?.toLowerCase().includes(query) ||
+            party.phone?.toLowerCase().includes(query)
+        )
+    }, [parties, search])
+
     return (
         <div className="flex flex-col h-full bg-white border-r">
             {/* SEARCH & FILTER */}
@@ -22,6 +34,8 @@ export function PartyList({ parties, selectedId, onSelect }: PartyListProps) {
                     <Input
                         placeholder="Search Party Name"
                         className="pl-9 h-9 bg-slate-50 border-slate-200 text-sm"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
                     />
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-500 px-1">
@@ -38,7 +52,7 @@ export function PartyList({ parties, selectedId, onSelect }: PartyListProps) {
             {/* LIST */}
             <ScrollArea className="flex-1">
                 <div className="flex flex-col">
-                    {parties.map((party) => {
+                    {filteredParties.map((party) => {
                         const isSelected = selectedId === party.id
                         const balance = party.current_balance || 0
                         const isPayable = balance < 0 // We owe them (negative logic usually, or just flagged)
@@ -81,7 +95,7 @@ export function PartyList({ parties, selectedId, onSelect }: PartyListProps) {
                     })}
 
                     {/* Empty State */}
-                    {parties.length === 0 && (
+                    {filteredParties.length === 0 && (
                         <div className="p-8 text-center text-slate-400 text-sm">
                             No parties found
                         </div>

@@ -7,10 +7,10 @@ import { format } from "date-fns"
 export type SalesReportItem = {
     id: string
     date: string
-    invoice_number: string
-    party_name: string
-    grand_total: number
-    payment_status: string
+    invoiceNumber: string
+    partyName: string
+    grandTotal: number
+    paymentStatus: string
 }
 
 export const columns: ColumnDef<SalesReportItem>[] = [
@@ -20,23 +20,23 @@ export const columns: ColumnDef<SalesReportItem>[] = [
         cell: ({ row }) => format(new Date(row.getValue("date")), "dd/MM/yyyy"),
     },
     {
-        accessorKey: "invoice_number",
+        accessorKey: "invoiceNumber",
         header: "Invoice #",
     },
     {
-        accessorKey: "party_name",
+        accessorKey: "partyName",
         header: "Customer",
     },
     {
-        accessorKey: "payment_status",
+        accessorKey: "paymentStatus",
         header: "Status",
-        cell: ({ row }) => <span className="capitalize">{row.getValue("payment_status")}</span>,
+        cell: ({ row }) => <span className="capitalize">{(row.getValue("paymentStatus") as string)?.toLowerCase()}</span>,
     },
     {
-        accessorKey: "grand_total",
+        accessorKey: "grandTotal",
         header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grand_total"))
+            const amount = parseFloat(row.getValue("grandTotal"))
             return <div className="text-right font-medium">₹ {amount.toFixed(2)}</div>
         },
     },
@@ -44,6 +44,6 @@ export const columns: ColumnDef<SalesReportItem>[] = [
 
 export function SalesReportClient({ data }: { data: any[] }) {
     return (
-        <DataTable columns={columns} data={data} searchKey="party_name" />
+        <DataTable columns={columns} data={data} searchKey="partyName" />
     )
 }

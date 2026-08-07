@@ -15,7 +15,7 @@ export default async function PurchaseReportPage({
 
     const data = await getPurchaseReport(startDateParam, endDateParam) || []
 
-    const totalPurchases = data.reduce((acc: number, curr: any) => acc + (curr.grand_total || 0), 0)
+    const totalPurchases = data.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0)
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

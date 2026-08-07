@@ -15,13 +15,29 @@ export async function getUserProfile() {
 
     if (!profile) return { user: null, profile: null }
 
+    const settings = (profile.tenant?.settings as Record<string, unknown>) || {}
+
     return {
       user: {
         id: profile.id,
         email: profile.email,
         role: profile.role
       },
-      profile: profile
+      // Profile/settings forms expect snake_case fields; Prisma returns
+      // camelCase, so alias both shapes onto the same object.
+      profile: {
+        ...profile,
+        first_name: profile.firstName,
+        last_name: profile.lastName,
+        avatar_url: profile.avatarUrl,
+        tenant: profile.tenant ? {
+          ...profile.tenant,
+          gst_no: profile.tenant.gstin,
+          logo_url: profile.tenant.logoUrl,
+          cin_no: settings.cin_no,
+          signature_url: settings.signature_url,
+        } : profile.tenant,
+      }
     }
   } catch (error) {
     return { user: null, profile: null }

@@ -1,13 +1,13 @@
 
 import { getPurchaseBills, getPurchaseStats } from '@/actions/purchase'
 import { Button } from '@/components/ui/button'
-import { Plus, Search, CheckCircle2, ShoppingBag, Filter, Download } from 'lucide-react'
+import { Plus, CheckCircle2, ShoppingBag, Filter, Download } from 'lucide-react'
 import Link from 'next/link'
 import { PurchaseBillsClient } from './purchase-bills-client'
 import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { parseISO } from 'date-fns'
+import { PurchaseBillsSearch } from './search'
 
 export default async function PurchaseBillsPage({
     searchParams,
@@ -98,14 +98,7 @@ export default async function PurchaseBillsPage({
 
             {/* Filters & Actions Bar */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        placeholder="Search supplier..."
-                        defaultValue={search}
-                        className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
-                    />
-                </div>
+                <PurchaseBillsSearch />
 
                 <div className="flex items-center gap-2">
                     <DatePickerWithRange />

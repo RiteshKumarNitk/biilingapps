@@ -16,8 +16,8 @@ export default async function SalesReportPage({
 
     const data = await getSalesReport(startDateParam, endDateParam) || []
 
-    const totalSales = data.reduce((acc: number, curr: any) => acc + (curr.grand_total || 0), 0)
-    const totalPaid = data.filter((i: any) => i.payment_status === 'paid').reduce((acc: number, curr: any) => acc + (curr.grand_total || 0), 0)
+    const totalSales = data.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0)
+    const totalPaid = data.filter((i) => i.paymentStatus === 'PAID').reduce((acc, curr) => acc + (curr.grandTotal || 0), 0)
 
     return (
         <div className="flex-1 space-y-4 p-8 pt-6">

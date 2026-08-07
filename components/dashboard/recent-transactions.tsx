@@ -33,8 +33,8 @@ export function RecentTransactions({ transactions }: RecentTransactionsProps) {
                                 {formatDistanceToNow(new Date(tx.createdAt), { addSuffix: true })}
                             </span>
                             <Badge variant={
-                                tx.status === 'paid' ? 'default' :
-                                    tx.status === 'overdue' ? 'destructive' : 'secondary'
+                                tx.status?.toLowerCase() === 'paid' ? 'default' :
+                                    tx.status?.toLowerCase() === 'overdue' ? 'destructive' : 'secondary'
                             } className="h-4 px-1 text-[10px] uppercase">
                                 {tx.status || 'Pending'}
                             </Badge>

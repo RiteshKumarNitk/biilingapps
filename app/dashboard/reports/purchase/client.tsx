@@ -7,9 +7,9 @@ import { format } from "date-fns"
 export type PurchaseReportItem = {
     id: string
     date: string
-    po_number: string // bill number
-    party_name: string
-    grand_total: number
+    poNumber: string // bill number
+    partyName: string
+    grandTotal: number
     status: string
 }
 
@@ -20,23 +20,23 @@ export const columns: ColumnDef<PurchaseReportItem>[] = [
         cell: ({ row }) => format(new Date(row.getValue("date")), "dd/MM/yyyy"),
     },
     {
-        accessorKey: "po_number",
+        accessorKey: "poNumber",
         header: "Bill #",
     },
     {
-        accessorKey: "party_name",
+        accessorKey: "partyName",
         header: "Supplier",
     },
     {
         accessorKey: "status",
         header: "Status",
-        cell: ({ row }) => <span className="capitalize">{row.getValue("status")}</span>,
+        cell: ({ row }) => <span className="capitalize">{(row.getValue("status") as string)?.toLowerCase()}</span>,
     },
     {
-        accessorKey: "grand_total",
+        accessorKey: "grandTotal",
         header: () => <div className="text-right">Amount</div>,
         cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grand_total"))
+            const amount = parseFloat(row.getValue("grandTotal"))
             return <div className="text-right font-medium">₹ {amount.toFixed(2)}</div>
         },
     },
@@ -44,6 +44,6 @@ export const columns: ColumnDef<PurchaseReportItem>[] = [
 
 export function PurchaseReportClient({ data }: { data: any[] }) {
     return (
-        <DataTable columns={columns} data={data} searchKey="party_name" />
+        <DataTable columns={columns} data={data} searchKey="partyName" />
     )
 }

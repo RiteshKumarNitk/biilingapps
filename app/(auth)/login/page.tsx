@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { apiClient } from '@/lib/api-client'
 import { useAuth } from '@/hooks/use-auth' // We'll create this hook
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -26,7 +27,7 @@ export default function LoginPage() {
       router.push('/dashboard')
     } catch (error) {
       console.error('Login error:', error)
-      // Handle error (show toast, etc.)
+      toast.error(error instanceof Error ? error.message : 'Login failed. Please check your credentials.')
     } finally {
       setLoading(false)
     }

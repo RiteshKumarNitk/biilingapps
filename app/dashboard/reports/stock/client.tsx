@@ -6,9 +6,9 @@ import { ColumnDef } from "@tanstack/react-table"
 export type StockReportItem = {
     id: string
     name: string
-    stock_quantity: number
+    stockQuantity: number
     price: number // Selling Price
-    cost_price: number // Purchase Price
+    costPrice: number // Purchase Price
 }
 
 export const columns: ColumnDef<StockReportItem>[] = [
@@ -17,9 +17,9 @@ export const columns: ColumnDef<StockReportItem>[] = [
         header: "Product Name",
     },
     {
-        accessorKey: "stock_quantity",
+        accessorKey: "stockQuantity",
         header: () => <div className="text-right">Current Stock</div>,
-        cell: ({ row }) => <div className="text-right font-medium">{row.getValue("stock_quantity")}</div>,
+        cell: ({ row }) => <div className="text-right font-medium">{row.getValue("stockQuantity")}</div>,
     },
     {
         accessorKey: "price",
@@ -33,7 +33,7 @@ export const columns: ColumnDef<StockReportItem>[] = [
         id: "stock_value",
         header: () => <div className="text-right">Stock Value (SP)</div>,
         cell: ({ row }) => {
-            const qty = parseFloat(row.getValue("stock_quantity") as any)
+            const qty = parseFloat(row.getValue("stockQuantity") as any)
             const price = parseFloat(row.getValue("price") as any)
             return <div className="text-right font-bold">₹ {(qty * price).toFixed(2)}</div>
         },

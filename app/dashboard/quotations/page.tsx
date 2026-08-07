@@ -15,7 +15,6 @@ import { format, parseISO } from 'date-fns'
 import {
     Plus,
     Calendar,
-    Search,
     Printer,
     Share2,
     MoreVertical,
@@ -36,9 +35,9 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { QuotationsTable } from '@/components/quotations/quotations-table'
+import { QuotationsSearch } from './search'
 
 export default async function QuotationsPage({
     searchParams,
@@ -127,15 +126,7 @@ export default async function QuotationsPage({
 
             {/* Filters & Actions Bar */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
-                <div className="relative flex-1 min-w-[200px] max-w-sm">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                    <Input
-                        name="search"
-                        placeholder="Search estimates..."
-                        defaultValue={search}
-                        className="pl-9 h-10 bg-slate-50 border-slate-200 focus:bg-white transition-colors"
-                    />
-                </div>
+                <QuotationsSearch />
 
                 <div className="flex items-center gap-2">
                     <DatePickerWithRange />
