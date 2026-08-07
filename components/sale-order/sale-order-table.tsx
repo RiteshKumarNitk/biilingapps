@@ -23,7 +23,7 @@ import Link from 'next/link'
 import { deleteSaleOrder, convertOrdersToInvoice } from '@/actions/sale-orders'
 import { toast } from 'sonner'
 import { useLoading } from '@/components/providers/loading-provider'
-import { cn } from '@/lib/utils'
+import { StatusBadge, EmptyState } from '@/components/shared'
 
 interface SaleOrderTableProps {
     data: any[]
@@ -119,14 +119,13 @@ export function SaleOrderTable({ data }: SaleOrderTableProps) {
                     <TableBody>
                         {data.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={10} className="h-24 text-center text-slate-500">
-                                    No Sale Orders found.
+                                <TableCell colSpan={10}>
+                                    <EmptyState title="No sale orders found" />
                                 </TableCell>
                             </TableRow>
                         ) : (
                             data.map((order) => {
                                 const isConverted = order.status === 'converted'
-                                const isOverdue = order.status === 'overdue'
 
                                 return (
                                     <TableRow key={order.id} className="hover:bg-slate-50 border-b border-slate-100 last:border-0">
@@ -166,14 +165,7 @@ export function SaleOrderTable({ data }: SaleOrderTableProps) {
                                             <span className="text-slate-500 text-sm">Sale Order</span>
                                         </TableCell>
                                         <TableCell>
-                                            <span className={cn(
-                                                "px-2 py-1 rounded-full text-xs font-semibold capitalize border",
-                                                isConverted ? "bg-green-50 text-green-600 border-green-200" :
-                                                    isOverdue ? "bg-orange-50 text-orange-600 border-orange-200" :
-                                                        "bg-slate-100 text-slate-600 border-slate-200"
-                                            )}>
-                                                {order.status}
-                                            </span>
+                                            <StatusBadge status={order.status} toneMap={{ overdue: 'warning' }} />
                                         </TableCell>
                                         <TableCell className="flex items-center gap-2">
                                             {/* Primary Action: Convert */}
