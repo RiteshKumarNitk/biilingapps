@@ -50,7 +50,7 @@ export async function getQuotations(
         open: 0
     }
 
-    allStats.forEach(q => {
+    allStats.forEach((q: any) => {
         const amount = q.grandTotal || 0
         summary.total += amount
         if (q.status === 'CONVERTED') {
