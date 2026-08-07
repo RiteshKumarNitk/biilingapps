@@ -100,7 +100,7 @@ export async function getPurchaseStats(filters?: { search?: string; startDate?: 
         select: { grandTotal: true, status: true }
     })
 
-    const total = data.reduce((sum, bill) => sum + (bill.grandTotal || 0), 0)
+    const total = data.reduce((sum: number, bill: any) => sum + (bill.grandTotal || 0), 0)
 
     return { total, count: data.length }
 }
