@@ -167,6 +167,8 @@ model Party {
   quotations       Quotation[]
   deliveryChallans DeliveryChallan[]
   saleOrders       SaleOrder[]
+
+  @@index([tenantId])
 }
 
 enum PartyType {
@@ -432,6 +434,8 @@ model CreditNoteItem {
   tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
   product    Product?   @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
 }
 
 // DELIVERY CHALLANS
@@ -473,6 +477,8 @@ model ChallanItem {
   tenant  Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   challan DeliveryChallan @relation(fields: [challanId], references: [id], onDelete: Cascade)
   product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
 }
 
 // PURCHASE ORDERS
@@ -523,6 +529,8 @@ model PoItem {
   tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id], onDelete: Cascade)
   product       Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
 }
 
 // BANK ACCOUNTS
@@ -632,4 +640,6 @@ model DebitNoteItem {
   tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   debitNote DebitNote @relation(fields: [debitNoteId], references: [id], onDelete: SetNull)
   product   Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
 }
