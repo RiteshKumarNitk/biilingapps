@@ -2,42 +2,18 @@
 import { getQuotations } from '@/actions/quotations'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table'
 import { Card, CardContent } from '@/components/ui/card'
-import { format, parseISO } from 'date-fns'
+import { parseISO } from 'date-fns'
 import {
     Plus,
-    Calendar,
-    Printer,
-    Share2,
-    MoreVertical,
-    Eye,
-    Edit,
-    Trash2,
     FileText,
-    FileEdit,
     CheckCircle2,
     Filter
 } from 'lucide-react'
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { QuotationsTable } from '@/components/quotations/quotations-table'
 import { QuotationsSearch } from './search'
+import { StatsCard } from '@/components/shared'
 
 export default async function QuotationsPage({
     searchParams,
@@ -77,24 +53,13 @@ export default async function QuotationsPage({
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2">
-                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-indigo-50 to-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                        <FileEdit className="h-24 w-24 text-indigo-600" />
-                    </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-indigo-100/50 rounded-lg text-indigo-600">
-                                <FileText className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total Estimates</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
-                                    {summary.total.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
-                                </h3>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    variant="gradient"
+                    color="indigo"
+                    icon={FileText}
+                    label="Total Estimates"
+                    value={summary.total.toLocaleString('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 })}
+                />
 
                 <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-purple-50 to-white relative overflow-hidden">
                     <div className="absolute top-0 right-0 p-3 opacity-5">

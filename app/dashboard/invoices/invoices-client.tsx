@@ -3,11 +3,11 @@
 import { DataTable } from "@/components/ui/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
-import { Eye, Printer, Share2, MoreHorizontal, Copy, Trash2 } from "lucide-react"
+import { Eye, Printer, MoreHorizontal, Copy } from "lucide-react"
 import Link from "next/link"
 import { DeleteInvoiceButton } from "@/components/invoices/delete-invoice-button"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { StatusBadge, AmountDisplay } from "@/components/shared"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -62,36 +62,16 @@ export const columns: ColumnDef<Invoice>[] = [
     {
         accessorKey: "paymentStatus",
         header: "Status",
-        cell: ({ row }) => {
-            const status = row.getValue("paymentStatus") as string
-            let variant: "default" | "secondary" | "destructive" | "outline" = "outline"
-            let className = ""
-
-            if (status === 'PAID') {
-                className = "bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
-                variant = "secondary" // using custom class instead of relying purely on variants
-            } else if (status === 'PARTIAL') {
-                className = "bg-amber-50 text-amber-700 hover:bg-amber-100 border-amber-200"
-                variant = "secondary"
-            } else {
-                className = "bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
-                variant = "secondary"
-            }
-
-            return (
-                <Badge variant={variant} className={`capitalize font-normal px-2.5 py-0.5 ${className}`}>
-                    {status ? status.toLowerCase() : "Unpaid"}
-                </Badge>
-            )
-        },
+        cell: ({ row }) => <StatusBadge status={row.getValue("paymentStatus")} />,
     },
     {
         accessorKey: "grandTotal",
         header: () => <div className="text-right">Amount</div>,
-        cell: ({ row }) => {
-            const amount = parseFloat(row.getValue("grandTotal"))
-            return <div className="text-right font-bold text-slate-800">₹ {amount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
-        },
+        cell: ({ row }) => (
+            <div className="text-right font-bold text-slate-800">
+                <AmountDisplay amount={parseFloat(row.getValue("grandTotal"))} />
+            </div>
+        ),
     },
     {
         id: "view",

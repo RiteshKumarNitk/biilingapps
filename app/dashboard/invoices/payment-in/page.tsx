@@ -1,6 +1,6 @@
 import { getPayments } from '@/actions/payment-in'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import {
     Table,
     TableBody,
@@ -14,6 +14,7 @@ import Link from 'next/link'
 import { format, parseISO } from 'date-fns'
 import { PaymentInSearch } from './search'
 import { DeletePaymentButton } from '@/components/payment-in/delete-payment-button'
+import { StatsCard, FilterBar, AmountDisplay, EmptyState } from '@/components/shared'
 
 export default async function PaymentInPage({
     searchParams,
@@ -48,47 +49,26 @@ export default async function PaymentInPage({
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2">
-                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-green-50 to-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                        <Wallet className="h-24 w-24 text-green-600" />
-                    </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-green-100/50 rounded-lg text-green-600">
-                                <Wallet className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total Received</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
-                                    ₹{summary.total.toLocaleString('en-IN')}
-                                </h3>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-slate-50 to-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                        <Receipt className="h-24 w-24 text-slate-600" />
-                    </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-slate-100/50 rounded-lg text-slate-600">
-                                <Receipt className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Payments Recorded</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">{summary.count}</h3>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    variant="gradient"
+                    color="green"
+                    icon={Wallet}
+                    label="Total Received"
+                    value={`₹${summary.total.toLocaleString('en-IN')}`}
+                />
+                <StatsCard
+                    variant="gradient"
+                    color="slate"
+                    icon={Receipt}
+                    label="Payments Recorded"
+                    value={summary.count}
+                />
             </div>
 
             {/* Filters */}
-            <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center gap-3">
+            <FilterBar>
                 <PaymentInSearch />
-            </div>
+            </FilterBar>
 
             {/* List Table */}
             <Card className="rounded-xl border-none shadow-sm bg-white overflow-hidden">
@@ -110,8 +90,8 @@ export default async function PaymentInPage({
                                 <TableCell className="font-medium">{payment.party_name}</TableCell>
                                 <TableCell className="text-muted-foreground">{payment.transaction_ref || '-'}</TableCell>
                                 <TableCell className="capitalize">{payment.mode?.toLowerCase().replace('_', ' ')}</TableCell>
-                                <TableCell className="text-right font-semibold text-green-600">
-                                    ₹{payment.amount.toLocaleString('en-IN')}
+                                <TableCell className="text-right font-semibold">
+                                    <AmountDisplay amount={payment.amount} className="text-green-600" />
                                 </TableCell>
                                 <TableCell>
                                     <DeletePaymentButton id={payment.id} />
@@ -120,8 +100,8 @@ export default async function PaymentInPage({
                         ))}
                         {payments.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center h-32 text-muted-foreground">
-                                    No payments found.
+                                <TableCell colSpan={6}>
+                                    <EmptyState title="No payments found" />
                                 </TableCell>
                             </TableRow>
                         )}

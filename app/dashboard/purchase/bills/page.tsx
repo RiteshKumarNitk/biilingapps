@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Plus, CheckCircle2, ShoppingBag, Filter, Download } from 'lucide-react'
 import Link from 'next/link'
 import { PurchaseBillsClient } from './purchase-bills-client'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { DatePickerWithRange } from '@/components/ui/date-range-picker'
 import { parseISO } from 'date-fns'
 import { PurchaseBillsSearch } from './search'
+import { StatsCard } from '@/components/shared'
 
 export default async function PurchaseBillsPage({
     searchParams,
@@ -52,43 +53,21 @@ export default async function PurchaseBillsPage({
 
             {/* Stats Overview */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-orange-50 to-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                        <ShoppingBag className="h-24 w-24 text-orange-600" />
-                    </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-orange-100/50 rounded-lg text-orange-600">
-                                <ShoppingBag className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total Purchases</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
-                                    ₹ {stats.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                </h3>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    variant="gradient"
+                    color="orange"
+                    icon={ShoppingBag}
+                    label="Total Purchases"
+                    value={`₹ ${stats.total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`}
+                />
 
-                <Card className="rounded-xl border-none shadow-sm bg-gradient-to-br from-blue-50 to-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-5">
-                        <CheckCircle2 className="h-24 w-24 text-indigo-600" />
-                    </div>
-                    <CardContent className="p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="p-3 bg-blue-100/50 rounded-lg text-blue-600">
-                                <Plus className="h-6 w-6" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-slate-500">Total Bills</p>
-                                <h3 className="text-2xl font-bold text-slate-900 mt-0.5">
-                                    {stats.count}
-                                </h3>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    variant="gradient"
+                    color="blue"
+                    icon={CheckCircle2}
+                    label="Total Bills"
+                    value={stats.count}
+                />
 
                 {/* Placeholder for Balance/Due if available later */}
                 <Card className="rounded-xl border-none shadow-sm bg-white border-dashed border-slate-200 hidden lg:flex items-center justify-center">

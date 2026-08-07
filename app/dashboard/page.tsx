@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Plus, ArrowDown, ArrowUp, MessageCircle, BarChart3, FileText, TrendingUp, TrendingDown, Users, Package, CreditCard } from 'lucide-react'
+import { Plus, MessageCircle, BarChart3, FileText, Users, CreditCard } from 'lucide-react'
 import Link from 'next/link'
+import { StatsCard } from '@/components/shared'
 import { getDashboardStats, getOverviewChartData, getSalesByCategory, getRecentSales, getInventoryStats, getCustomerStats, getOperationsStats } from '@/actions/dashboard'
 import { SalesChart } from '@/components/dashboard/sales-chart'
 import { CategoryChart } from '@/components/dashboard/category-chart'
@@ -66,71 +67,40 @@ export default async function DashboardPage({
 
             {/* KPI Cards (Filtered) */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-3 opacity-10">
-                        <CreditCard className="h-16 w-16 text-blue-600" />
-                    </div>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Total Revenue</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">₹{stats.totalRevenue.toLocaleString()}</div>
-                        <div className="flex items-center text-xs text-muted-foreground mt-1 gap-2">
-                            {stats.growthPercentage >= 0 ? (
-                                <span className="text-emerald-600 flex items-center font-medium bg-emerald-50 px-1.5 py-0.5 rounded">
-                                    <TrendingUp className="h-3 w-3 mr-1" />
-                                    {stats.growthPercentage.toFixed(1)}%
-                                </span>
-                            ) : (
-                                <span className="text-red-600 flex items-center font-medium bg-red-50 px-1.5 py-0.5 rounded">
-                                    <TrendingDown className="h-3 w-3 mr-1" />
-                                    {Math.abs(stats.growthPercentage).toFixed(1)}%
-                                </span>
-                            )}
-                            <span className="opacity-70">
-                                {period === 'this-month' ? 'vs last month' : 'growth'}
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    icon={CreditCard}
+                    label="Total Revenue"
+                    value={`₹${stats.totalRevenue.toLocaleString()}`}
+                    trend={stats.growthPercentage}
+                    trendLabel={period === 'this-month' ? 'vs last month' : 'growth'}
+                />
 
-                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Total Sales</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">{stats.salesCount}</div>
-                        <p className="text-xs text-slate-400 mt-1">Invoices in period</p>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    label="Total Sales"
+                    value={stats.salesCount}
+                    footer={<span className="text-slate-400">Invoices in period</span>}
+                />
 
-                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Receivable</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">₹{stats.totalReceivable.toLocaleString()}</div>
-                        <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs font-medium bg-green-50 text-green-700 px-1.5 py-0.5 rounded">
-                                {stats.receivablePartiesCount} Parties
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    label="Receivable"
+                    value={`₹${stats.totalReceivable.toLocaleString()}`}
+                    valueClassName="text-green-600"
+                    footer={
+                        <span className="font-medium bg-green-50 text-green-700 px-1.5 py-0.5 rounded">
+                            {stats.receivablePartiesCount} Parties
+                        </span>
+                    }
+                />
 
-                <Card className="rounded-xl border-none shadow-sm hover:shadow-md transition-shadow">
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium text-slate-500">Payable</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-slate-900">₹{stats.totalPayable.toLocaleString()}</div>
-                        <div className="flex items-center gap-1 mt-1">
-                            <span className="text-xs font-medium bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
-                                {stats.payablePartiesCount} Parties
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
+                <StatsCard
+                    label="Payable"
+                    value={`₹${stats.totalPayable.toLocaleString()}`}
+                    footer={
+                        <span className="font-medium bg-red-50 text-red-700 px-1.5 py-0.5 rounded">
+                            {stats.payablePartiesCount} Parties
+                        </span>
+                    }
+                />
             </div>
 
             {/* New Middle Section: Operational Insights */}
