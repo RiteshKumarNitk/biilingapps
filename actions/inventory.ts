@@ -95,12 +95,12 @@ export async function getInventoryStats() {
         select: { stockQuantity: true, costPrice: true, type: true }
     })
 
-    const totalStockValue = products.reduce((acc: number, p) => {
+    const totalStockValue = products.reduce((acc: number, p: any) => {
         if (p.type === 'service') return acc
         return acc + ((p.stockQuantity || 0) * (p.costPrice || 0))
     }, 0)
 
-    const totalStockQty = products.reduce((acc: number, p) => {
+    const totalStockQty = products.reduce((acc: number, p: any) => {
         if (p.type === 'service') return acc
         return acc + (p.stockQuantity || 0)
     }, 0)
